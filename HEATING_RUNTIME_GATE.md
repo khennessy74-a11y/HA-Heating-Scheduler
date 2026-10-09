@@ -17,3 +17,7 @@ The isolated `HeatingRuntimeCoordinator` is a **development-only module**.
 5. Verify these tests with actual Home Assistant dependencies, not only fakes.
 
 Until then, **do not connect the new integration to the production heater**.
+
+## Controller cancellation race review (2026-10-09)
+
+A race existed where a stray manual-OFF callback could write the controller's cancellation flag when no session was running. Manual-OFF and stop transitions now acquire the same controller lock used by start and snapshot the task before cancelling it. Offline regression cases cover idle callbacks, concurrent starts, and repeated stop calls. These tests do not prove correct behaviour under all physical-switch or Home Assistant restart races; keep runtime release gates closed.

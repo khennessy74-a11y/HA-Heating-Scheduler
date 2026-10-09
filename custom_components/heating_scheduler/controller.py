@@ -73,24 +73,30 @@ class TimedHeatingController:
 
     async def notify_manual_off(self) -> None:
         """Cancel a countdown after external OFF, without toggling switch."""
-        self._manually_off = True
-        if self.running:
+        async with self._lock:
+            if not self.running:
+                return
+            self._manually_off = True
             assert self._task is not None
-            self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                pass
+            task = self._task
+            task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
     async def stop(self) -> None:
         """Cancel a running session, requesting OFF in the finalizer."""
-        if self.running:
+        async with self._lock:
+            if not self.running:
+                return
             assert self._task is not None
-            self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                pass
+            task = self._task
+            task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
     async def wait_finished(self) -> None:
         """Await the session result; use in tests and future HA adapter."""

@@ -159,5 +159,44 @@ class ControllerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(switch.off_calls, 0)
 
 
+    async def test_manual_off_on_idle_does_not_plant_stale_cancel_flag(self):
+        switch = FakeSwitch()
+        ctl = Controller(switch)
+        await ctl.notify_manual_off()
+        await ctl.start(15)
+        await ctl.wait_finished()
+        self.assertEqual((switch.on_calls, switch.off_calls), (1, 1))
+
+    async def test_repeated_manual_off_on_idle_is_noop(self):
+        switch = FakeSwitch()
+        ctl = Controller(switch)
+        await asyncio.gather(ctl.notify_manual_off(), ctl.notify_manual_off())
+        self.assertEqual((switch.on_calls, switch.off_calls), (0, 0))
+        self.assertFalse(ctl.running)
+
+    async def test_concurrent_start_requests_allow_only_one(self):
+        switch = FakeSwitch()
+        gate = asyncio.Event()
+        async def wait_forever(seconds):
+            await gate.wait()
+        ctl = Controller(switch, sleep=wait_forever)
+        results = await asyncio.gather(ctl.start(15), ctl.start(30),
+                                       return_exceptions=True)
+        self.assertEqual(sum(item is None for item in results), 1)
+        self.assertEqual(sum(isinstance(item, ValueError) for item in results), 1)
+        await ctl.stop()
+        self.assertEqual((switch.on_calls, switch.off_calls), (1, 1))
+
+    async def test_concurrent_stop_requests_do_not_duplicate_off(self):
+        switch = FakeSwitch()
+        async def wait_forever(seconds):
+            await asyncio.Event().wait()
+        ctl = Controller(switch, sleep=wait_forever)
+        await ctl.start(15)
+        await asyncio.gather(ctl.stop(), ctl.stop())
+        self.assertEqual(switch.off_calls, 1)
+        self.assertFalse(ctl.running)
+
+
 if __name__ == "__main__":
     unittest.main()
