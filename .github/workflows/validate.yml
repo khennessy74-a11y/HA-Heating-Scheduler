@@ -136,6 +136,31 @@ jobs:
                       async_get_entry=lambda key: self.entry if key == "test_entry" else None,
                   )
 
+          # Exercise actual integration setup / unload coroutines using installed
+          # Home Assistant libraries with in-memory services and entries only.
+          import asyncio
+          async def lifecycle_smoke():
+              entry = SimpleNamespace(
+                  entry_id="test_entry", data={"target_entity": "switch.test_only"},
+                  domain="heating_scheduler", options={},
+              )
+              local = InMemoryHA()
+              assert await package.async_setup(local, {}) is True
+              assert await package.async_setup_entry(local, entry) is True
+              assert local.data["heating_scheduler"]["test_entry"]["target_entity"] == "switch.test_only"
+              assert await package.async_unload_entry(local, entry) is True
+              assert "test_entry" not in local.data["heating_scheduler"]
+              # The service endpoints are still denied even after unload.
+              for (domain, name), (handler, schema) in local.services.handlers.items():
+                  try:
+                      await handler(SimpleNamespace(service=name, data={"entry_id": "test_entry"}))
+                  except ServiceValidationError:
+                      pass
+                  else:
+                      raise AssertionError(f"Unexpected service acceptance: {name}")
+              assert not local.services.calls.called
+          asyncio.run(lifecycle_smoke())
+
           hass = InMemoryHA()
           async_register_schedule_services(hass)
           async_register_schedule_services(hass)
