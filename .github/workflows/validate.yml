@@ -162,8 +162,6 @@ jobs:
               for (domain, name), (handler, schema) in local.services.handlers.items():
                   if name == "list_schedules":
                       continue
-                  if name == "list_schedules":
-                      continue
                   try:
                       await handler(SimpleNamespace(service=name, data={"entry_id": "test_entry"}))
                   except ServiceValidationError:
@@ -205,6 +203,10 @@ jobs:
                   (name, pair)
                   for (domain, name), pair in local.services.handlers.items()
               ]:
+                  # Only write services are expected to reject an opted-in caller.
+                  # list_schedules is a deliberately permitted read-only service.
+                  if name == "list_schedules":
+                      continue
                   try:
                       await handler(SimpleNamespace(service=name, data={
                           "entry_id": "test_entry"
