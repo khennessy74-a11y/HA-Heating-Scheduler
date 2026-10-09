@@ -106,6 +106,7 @@ class HeatingSchedulerWorkflowPreview extends HTMLElement {
     if (this._error) card.append(this._node("div", "notice", this._error));
     card.append(this._node("div", "notice", "Development preview · All schedule changes disabled"));
     if (this._view === "edit" || this._view === "add") this._drawForm(card);
+    else if (this._view === "delete_preview") this._drawDeletePreview(card);
     else this._drawList(card);
     root.append(css, card);
   }
@@ -137,13 +138,37 @@ class HeatingSchedulerWorkflowPreview extends HTMLElement {
           this._view = "edit";
           this._draw();
         }));
-        row.append(this._button("Delete (disabled)", () => {}, true));
+        if (item.status === "Disabled" && item.can_delete_after_confirmation === true) {
+          row.append(this._button("🗑 Review", () => {
+            this._selected = item;
+            this._view = "delete_preview";
+            this._draw();
+          }));
+        }
       } else {
         row.append(this._node("span", "status " + (item.status === "Enabled" ? "enabled" : ""),
           ["Enabled", "Disabled", "Unknown"].includes(item.status) ? item.status : "Unknown"));
       }
       card.append(row);
     }
+  }
+  _drawDeletePreview(card) {
+    card.append(this._node("h3", "", "Delete Schedule — confirmation preview"));
+    const item = this._selected;
+    // This screen intentionally has NO service call or confirm/delete handler.
+    card.append(this._node("p", "", "Delete " + String(item?.title || "this schedule") + "?"));
+    card.append(this._node("p", "notice",
+      "Deletion is locked in this development build, even for disabled schedules."));
+    const actions = this._node("div", "actions");
+    actions.append(
+      this._button("Cancel", () => {
+        this._view = "manage";
+        this._selected = null;
+        this._draw();
+      }),
+      this._button("Confirm deletion — unavailable", () => {}, true)
+    );
+    card.append(actions);
   }
   _drawForm(card) {
     card.append(this._node("h3", "",

@@ -18,7 +18,7 @@ class PreviewTests(unittest.TestCase):
         content = CARD.read_text()
         self.assertIn("input.disabled = true", content)
         self.assertIn('"Save — unavailable", () => {}, true', content)
-        self.assertIn('"Delete (disabled)", () => {}, true', content)
+        self.assertIn('"Confirm deletion — unavailable", () => {}, true', content)
 
     def test_no_mutating_calls_or_unsafe_dom(self):
         content = CARD.read_text()
@@ -40,3 +40,12 @@ class PreviewTests(unittest.TestCase):
             'time.value = selected?.start || ""',
         ):
             self.assertIn(expected, content)
+
+    def test_disabled_only_confirmation_preview(self):
+        content = CARD.read_text()
+        self.assertIn('item.status === "Disabled" && item.can_delete_after_confirmation === true', content)
+        self.assertIn('this._view = "delete_preview"', content)
+        self.assertIn('this._drawDeletePreview(card)', content)
+        self.assertIn('this._view = "manage"', content)
+        self.assertIn('"Confirm deletion — unavailable", () => {}, true', content)
+        self.assertNotIn('service: "remove_schedule"', content)

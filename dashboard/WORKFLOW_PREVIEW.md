@@ -36,3 +36,7 @@ Scheduler Component exposes `weekdays`, `actions` and `timeslots` as switch stat
 ## Form controls upgrade
 
 The disabled Add/Edit preview now uses a time input, duration dropdown with the eight approved durations, seven weekday checkboxes, and an Enabled checkbox. The enabled checkbox defaults checked on new schedule previews and reads the known state on edit. All fields remain disabled. No Save action or backend write path has been added. Unknown start times remain blank, and unknown enabled state is labelled separately.
+
+## Manage and confirmation preview
+
+In the Manage Schedules screen, an enabled or unknown-state schedule has **no delete button**. A disabled schedule marked deletion-eligible by the read-only response has a **Review** button which opens a confirmation-preview screen. Cancel returns to Manage Schedules. **Confirm deletion remains disabled and no delete service is invoked**, regardless of state. This allows us to validate the mobile safety workflow without exposing schedule mutation.
