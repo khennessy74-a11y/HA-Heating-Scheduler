@@ -1,28 +1,5 @@
-# Service descriptions from the Beta 2 reference package.
-# Service handlers are NOT registered by the current development __init__.py.
-start:
-  name: Start timed heating
-  description: Start a timed session on the selected heating device.
-  fields:
-    entry_id:
-      required: true
-      selector:
-        text: {}
-    minutes:
-      required: true
-      selector:
-        number:
-          min: 15
-          max: 240
-          step: 15
-          mode: box
-stop:
-  name: Stop timed heating
-  fields:
-    entry_id:
-      required: true
-      selector:
-        text: {}
+# Preview: schedule management only; physical heating start/stop are not registered.
+# All write services are disabled unless explicitly opted in.
 add_schedule:
   name: Add heating schedule
   fields:
