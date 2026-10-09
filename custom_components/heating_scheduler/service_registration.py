@@ -8,7 +8,7 @@ from __future__ import annotations
 import voluptuous as vol
 
 from homeassistant.core import HomeAssistant, ServiceCall
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import ServiceValidationError
 
 from .const import DOMAIN
 from .ha_scheduler_services import HomeAssistantSchedulerServices
@@ -56,7 +56,7 @@ def async_register_schedule_services(hass: HomeAssistant) -> None:
     async def _dispatch(call: ServiceCall) -> None:
         entry_id = call.data["entry_id"]
         if not schedule_writes_allowed(hass, entry_id):
-            raise HomeAssistantError(
+            raise ServiceValidationError(
                 "Heating Scheduler write services are disabled for this entry"
             )
         entries = {
@@ -70,9 +70,9 @@ def async_register_schedule_services(hass: HomeAssistant) -> None:
             elif call.service == "remove_schedule":
                 await adapter.remove(entries=entries, **dict(call.data))
             else:
-                raise HomeAssistantError("Unsupported Heating Scheduler service")
+                raise ServiceValidationError("Unsupported Heating Scheduler service")
         except ValueError as err:
-            raise HomeAssistantError(str(err)) from err
+            raise ServiceValidationError(str(err)) from err
 
     for name, schema in _SCHEMAS.items():
         hass.services.async_register(DOMAIN, name, _dispatch, schema=schema)
