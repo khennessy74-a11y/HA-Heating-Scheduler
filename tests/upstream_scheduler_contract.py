@@ -11,6 +11,9 @@ import sys
 
 import voluptuous as vol
 
+# Running this file as a script places tests/ first on sys.path, not repo root.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from custom_components.heating_scheduler.scheduler_bridge import (
     ScheduleError,
     SchedulerBridge,
