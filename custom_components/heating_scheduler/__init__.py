@@ -13,6 +13,7 @@ from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN
 from .service_registration import async_register_schedule_services
+from .read_only_api import async_register_read_only_service
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
@@ -22,6 +23,7 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Expose schedule management services, disabled unless explicitly opted in."""
     async_register_schedule_services(hass)
+    async_register_read_only_service(hass)
     return True
 
 

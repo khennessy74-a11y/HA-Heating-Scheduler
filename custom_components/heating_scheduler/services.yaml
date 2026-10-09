@@ -83,3 +83,12 @@ remove_schedule:
       selector:
         entity:
           domain: switch
+
+list_schedules:
+  name: List heating schedules
+  description: Read-only list of schedules belonging to one Heating Scheduler configuration entry.
+  fields:
+    entry_id:
+      required: true
+      selector:
+        text:
