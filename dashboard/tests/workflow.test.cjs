@@ -82,3 +82,68 @@ test("add form offers seven disabled weekday inputs and disabled save", () => {
   assert.equal(elements(card.shadowRoot, node => node.tagName === "input").every(n => n.disabled), true);
   assert.equal(buttons().find(b => b.textContent === "Save — unavailable").disabled, true);
 });
+
+test("failed or malformed read-only response reports error without mutations", async () => {
+  const card = createCard(path, "heating-scheduler-workflow-preview");
+  const requests = [];
+  card.hass = { callWS: async request => {
+    requests.push(request);
+    return { response: { read_only: false, items: [] } };
+  } };
+  card.setConfig({ entry_id: "disposable_a" });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.match(card._error, /Read-only schedule response unavailable/);
+  assert.equal(card._rows.length, 0);
+  assert.equal(requests.length, 1);
+  assert.equal(requests[0].service, "list_schedules");
+});
+
+test("changing config invalidates outdated responses", async () => {
+  const card = createCard(path, "heating-scheduler-workflow-preview");
+  let releaseOld;
+  const requests = [];
+  card.hass = { callWS: request => {
+    requests.push(request);
+    if (request.service_data.entry_id === "disposable_old")
+      return new Promise(resolve => { releaseOld = resolve; });
+    return Promise.resolve({response:{read_only:true,items:[{title:"New"}]}});
+  } };
+  card.setConfig({entry_id:"disposable_old"});
+  card.setConfig({entry_id:"disposable_new"});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(requests.length, 2);
+  assert.equal(card._rows[0].title, "New");
+  releaseOld({response:{read_only:true,items:[{title:"Old"}]}});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(card._rows[0].title, "New");
+});
+
+test("empty owned schedule list renders safely", async () => {
+  const card = createCard(path, "heating-scheduler-workflow-preview");
+  card.hass = {callWS:async () => ({response:{read_only:true,items:[]}})};
+  card.setConfig({entry_id:"disposable_empty"});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(card._rows.length, 0);
+  assert.equal(card._error, "");
+  assert.equal(card._view, "control");
+});
+
+test("edit preview never enables controls even for valid schedule", async () => {
+  const card = createCard(path, "heating-scheduler-workflow-preview");
+  card.hass = {callWS:async () => ({response:{read_only:true,items:[
+    {title:"Morning",status:"Enabled",enabled:true,minutes:60,
+     weekdays:["mon","fri"],start:"07:30",can_delete_after_confirmation:false}
+  ]}})};
+  card.setConfig({entry_id:"disposable_edit"});
+  await new Promise(resolve => setImmediate(resolve));
+  const buttons = () => elements(card.shadowRoot, node => node.tagName === "button");
+  buttons().find(b => b.textContent === "Morning").click();
+  assert.equal(card._view,"edit");
+  const time = elements(card.shadowRoot, node => node.type === "time")[0];
+  assert.equal(time.value,"07:30");
+  assert.equal(time.disabled,true);
+  const select = elements(card.shadowRoot, node => node.tagName === "select")[0];
+  assert.equal(select.value,"60");
+  assert.equal(select.disabled,true);
+  assert.equal(buttons().find(b => b.textContent === "Save — unavailable").disabled,true);
+});

@@ -9,6 +9,7 @@ class HeatingSchedulerWorkflowPreview extends HTMLElement {
     this._view = "control";
     this._selected = null;
     this._busy = false;
+    this._loaded = false;
     this._error = "";
     this._request = 0;
   }
@@ -17,6 +18,9 @@ class HeatingSchedulerWorkflowPreview extends HTMLElement {
       throw new Error("Provide a disposable Heating Scheduler entry_id");
     this._config = { entry_id: config.entry_id.trim() };
     this._rows = [];
+    this._loaded = false;
+    this._busy = false;
+    this._error = "";
     this._view = "control";
     this._selected = null;
     this._request++;
