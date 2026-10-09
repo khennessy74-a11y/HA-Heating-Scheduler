@@ -397,5 +397,80 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         )
 
 
+    async def test_scheduler_add_failure_does_not_toggle_any_switch(self):
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service))
+            if (domain, service) == ("scheduler", "add"):
+                raise RuntimeError("Scheduler unavailable")
+
+        b = bridge.SchedulerBridge(call, lambda: {})
+        with self.assertRaisesRegex(RuntimeError, "Scheduler unavailable"):
+            await b.add(
+                entry_id="a", name="Morning", start="06:00",
+                weekdays=["mon"], minutes=15, enabled=False,
+            )
+        self.assertEqual(calls, [("scheduler", "add")])
+
+    async def test_scheduler_edit_failure_does_not_toggle_any_switch(self):
+        schedules = {
+            "switch.schedule_morning": {
+                "friendly_name": "Scheduler Morning", "state": "off",
+                "actions": [bridge.schedule_action("a", 15)],
+            },
+        }
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service))
+            if (domain, service) == ("scheduler", "edit"):
+                raise RuntimeError("Edit unavailable")
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        with self.assertRaisesRegex(RuntimeError, "Edit unavailable"):
+            await b.edit(
+                entry_id="a", entity_id="switch.schedule_morning",
+                name="Morning", start="06:00", weekdays=["tue"],
+                minutes=30, enabled=True,
+            )
+        self.assertEqual(calls, [("scheduler", "edit")])
+
+    async def test_delete_failure_does_not_toggle_schedule(self):
+        schedules = {
+            "switch.schedule_morning": {
+                "friendly_name": "Scheduler Morning", "state": "off",
+                "actions": [bridge.schedule_action("a", 15)],
+            },
+        }
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service))
+            raise RuntimeError("Remove unavailable")
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        with self.assertRaisesRegex(RuntimeError, "Remove unavailable"):
+            await b.remove(entry_id="a", entity_id="switch.schedule_morning")
+        self.assertEqual(calls, [("scheduler", "remove")])
+
+    async def test_unknown_state_blocks_deletion(self):
+        schedules = {
+            "switch.schedule_morning": {
+                "friendly_name": "Scheduler Morning", "state": "unavailable",
+                "actions": [bridge.schedule_action("a", 15)],
+            },
+        }
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service))
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        with self.assertRaisesRegex(bridge.ScheduleError, "Disable"):
+            await b.remove(entry_id="a", entity_id="switch.schedule_morning")
+        self.assertEqual(calls, [])
+
+
 if __name__ == "__main__":
     unittest.main()
