@@ -17,6 +17,8 @@
 - [ ] Restart behavior, concurrent actions and error reporting tests
 
 ## Mobile dashboard
+- [x] Add a non-interactive mobile Lovelace preview and static safety tests
+- [ ] Define integration-native schedule list data and UI state contract
 - [ ] One-column Heating Control schedule rows
 - [ ] Tap row to load Add/Edit (not enable/disable)
 - [ ] Enable/disable control inside edit

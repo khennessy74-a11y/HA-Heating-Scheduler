@@ -1,0 +1,51 @@
+# DEVELOPMENT PREVIEW ONLY. No heating or schedule service actions.
+# Placeholders deliberately show the UX without coupling to legacy YAML helpers.
+title: Heating Scheduler — UI Preview
+views:
+  - title: Heating
+    path: heating-preview
+    icon: mdi:radiator
+    cards:
+      - type: markdown
+        content: |
+          ## Heating Scheduler
+          **Preview only — control disabled.**
+          This layout demonstrates the approved one-column mobile workflow.
+          It does not create, edit, delete or activate schedules.
+      - type: heading
+        heading: Heating Control
+        icon: mdi:calendar-clock
+      - type: markdown
+        content: |
+          **Example: Morning heat** · 06:30 · 60 minutes
+
+          Mon · Tue · Wed · Thu · Fri
+
+          🟢 Enabled — tap-to-edit planned (not active)
+      - type: markdown
+        content: |
+          **Example: Weekend heat** · 08:00 · 45 minutes
+
+          Sat · Sun
+
+          ⚪ Disabled — tap-to-edit planned (not active)
+      - type: heading
+        heading: Manage Schedules
+        icon: mdi:calendar-edit
+      - type: markdown
+        content: |
+          **Morning heat** — Edit ✎ · Delete unavailable while enabled
+
+          **Weekend heat** — Edit ✎ · Delete with confirmation (planned)
+      - type: heading
+        heading: Add / Edit
+        icon: mdi:calendar-plus
+      - type: markdown
+        content: |
+          Shared Add/Edit form — planned fields:
+
+          **Name** · **Start time** · **Duration** · **Weekdays**
+
+          **Enabled** (default ON for a new schedule)
+
+          Save and Delete are disabled until native services are tested.
