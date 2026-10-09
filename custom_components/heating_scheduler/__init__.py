@@ -11,12 +11,14 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
+from .service_registration import async_register_schedule_services
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Allow configuration via the Home Assistant UI."""
+    """Expose schedule management services, disabled unless explicitly opted in."""
+    async_register_schedule_services(hass)
     return True
 
 
@@ -26,7 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         "target_entity": entry.data["target_entity"],
     }
     _LOGGER.warning(
-        "Heating Scheduler is a development preview: no heating actions are active"
+        "Heating Scheduler preview: hardware controls are inactive; schedule writes are disabled by default"
     )
     return True
 
