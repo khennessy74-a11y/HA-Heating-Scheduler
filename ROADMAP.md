@@ -24,7 +24,8 @@
 - [x] Implement read-only Lovelace card fetching response-service data
 - [ ] Run browser/UI and actual Scheduler Component tests in a disposable HA installation
 - [ ] Verify structured Scheduler Component timing source before enabling an edit form
-- [ ] One-column Heating Control schedule rows
+- [x] Read-only mobile navigation prototype for Heating Control, Manage and Add/Edit
+- [ ] One-column Heating Control schedule rows (final Bubble/Mushroom integration)
 - [ ] Tap row to load Add/Edit (not enable/disable)
 - [ ] Enable/disable control inside edit
 - [ ] Manage-only deletion with confirmation and disabled-only guard
