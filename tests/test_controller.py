@@ -97,5 +97,67 @@ class ControllerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(switch.off_calls, 1)
 
 
+    async def test_cancel_during_switch_confirmation(self):
+        switch = FakeSwitch()
+        confirming = asyncio.Event()
+
+        async def wait_for_confirmation(timeout):
+            await confirming.wait()
+            return True
+
+        switch.wait_until_on = wait_for_confirmation
+        ctl = Controller(switch)
+        await ctl.start(15)
+        await ctl.stop()
+        self.assertEqual(switch.off_calls, 1)
+        self.assertFalse(ctl.running)
+
+    async def test_manual_off_during_confirmation(self):
+        switch = FakeSwitch()
+
+        async def wait_for_confirmation(timeout):
+            await asyncio.Event().wait()
+
+        switch.wait_until_on = wait_for_confirmation
+        ctl = Controller(switch)
+        await ctl.start(15)
+        switch.state = "off"
+        await ctl.notify_manual_off()
+        self.assertEqual(switch.off_calls, 0)
+        self.assertFalse(ctl.running)
+
+    async def test_switch_turn_on_failure_requests_off(self):
+        switch = FakeSwitch()
+
+        async def fail_to_turn_on():
+            raise RuntimeError("device unreachable")
+
+        switch.turn_on = fail_to_turn_on
+        ctl = Controller(switch)
+        await ctl.start(15)
+        with self.assertRaisesRegex(RuntimeError, "device unreachable"):
+            await ctl.wait_finished()
+        self.assertEqual(switch.off_calls, 1)
+
+    async def test_session_can_restart_after_manual_off(self):
+        switch = FakeSwitch()
+        async def wait_forever(seconds):
+            await asyncio.Event().wait()
+        ctl = Controller(switch, sleep=wait_forever)
+        await ctl.start(15)
+        switch.state = "off"
+        await ctl.notify_manual_off()
+        await ctl.start(30)
+        await ctl.stop()
+        self.assertEqual(switch.on_calls, 2)
+        self.assertEqual(switch.off_calls, 1)
+
+    async def test_stopping_idle_controller_does_not_touch_switch(self):
+        switch = FakeSwitch()
+        ctl = Controller(switch)
+        await ctl.stop()
+        self.assertEqual(switch.off_calls, 0)
+
+
 if __name__ == "__main__":
     unittest.main()
