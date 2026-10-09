@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_state_change_event
 
 from .runtime_events import StateEventRouter
@@ -27,6 +27,7 @@ def attach_test_state_listener(
     pending: set[asyncio.Task] = set()
     closed = False
 
+    @callback
     def on_change(event):
         if closed:
             return
