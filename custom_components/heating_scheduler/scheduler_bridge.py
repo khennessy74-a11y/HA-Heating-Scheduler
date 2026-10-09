@@ -104,6 +104,18 @@ class SchedulerBridge:
     async def set_enabled(self, entity_id: str, enabled: bool) -> None:
         """Only call with an entity ID separately validated as owned."""
         await self._call("switch", "turn_on" if enabled else "turn_off", {"entity_id": entity_id})
+        # Service completion does not guarantee the state has changed.
+        # Refuse to report success unless Scheduler's switch confirms it.
+        desired = "on" if enabled else "off"
+        for _ in range(20):
+            attrs = self._get_schedules().get(entity_id)
+            if attrs is not None and attrs.get("state") == desired:
+                return
+            await asyncio.sleep(0.25)
+        raise ScheduleError(
+            "Scheduler switch did not confirm the requested enabled state; "
+            "inspect the schedule before retrying"
+        )
 
     async def add(
         self, *, entry_id: str, name: str, start: str, weekdays: list[str],
@@ -189,3 +201,13 @@ class SchedulerBridge:
             if attrs.get("state") != "off":
                 raise ScheduleError("Disable schedule before deletion")
             await self._call("scheduler", "remove", {"entity_id": entity_id})
+            # Removal may lag the service response; never claim a deletion
+            # before the known owned entity disappears from state snapshots.
+            for _ in range(20):
+                if entity_id not in self._get_schedules():
+                    return
+                await asyncio.sleep(0.25)
+            raise ScheduleError(
+                "Scheduler did not confirm removal; inspect the existing "
+                "schedule before retrying"
+            )
