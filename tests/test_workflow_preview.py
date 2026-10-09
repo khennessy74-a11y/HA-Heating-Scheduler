@@ -28,3 +28,15 @@ class PreviewTests(unittest.TestCase):
                           'service: "remove_schedule"'):
             with self.subTest(forbidden=forbidden):
                 self.assertNotIn(forbidden, content)
+
+    def test_weekday_duration_time_and_enabled_controls_are_disabled(self):
+        content = CARD.read_text()
+        for expected in (
+            'time.type = "time"', 'duration = this._node("select")',
+            'weekdaySection.disabled = true', 'checkbox.disabled = true',
+            'toggle.disabled = true', 'toggle.checked = selected ? selected.enabled === true : true',
+            '["mon", "Mon"]', '["sun", "Sun"]',
+            'durations = [15, 30, 45, 60, 90, 120, 180, 240]',
+            'time.value = selected?.start || ""',
+        ):
+            self.assertIn(expected, content)

@@ -86,6 +86,10 @@ class HeatingSchedulerWorkflowPreview extends HTMLElement {
       button { padding:8px; border:1px solid var(--divider-color); border-radius:10px; background:transparent; color:var(--primary-text-color); }
       button:disabled { opacity:.45; cursor:not-allowed; }
       .form { display:grid; gap:12px; padding-top:12px; }
+      fieldset { border:1px solid var(--divider-color); border-radius:10px; display:grid; grid-template-columns:repeat(auto-fit,minmax(65px,1fr)); gap:8px; }
+      legend { font-weight:600; }
+      label.day, label.enabledToggle { display:flex; align-items:center; gap:6px; }
+      label.day input, label.enabledToggle input { width:auto; }
       label { display:grid; gap:4px; font-size:14px; }
       input,select { padding:8px; border-radius:8px; border:1px solid var(--divider-color); background:var(--card-background-color); color:var(--primary-text-color); width:100%; box-sizing:border-box; }
       .actions { display:flex; gap:8px; flex-wrap:wrap; }
@@ -142,26 +146,73 @@ class HeatingSchedulerWorkflowPreview extends HTMLElement {
     }
   }
   _drawForm(card) {
-    card.append(this._node("h3", "", this._view === "add" ? "Add Schedule — preview" : "Edit Schedule — preview"));
+    card.append(this._node("h3", "",
+      this._view === "add" ? "Add Schedule — preview" : "Edit Schedule — preview"));
     const form = this._node("div", "form");
     const selected = this._selected;
-    for (const [label, val] of [
-      ["Schedule name", selected?.title || ""],
-      ["Start time", selected?.start ?? "Unavailable"],
-      ["Duration (minutes)", selected?.minutes ?? "Unavailable"],
-      ["Weekdays", Array.isArray(selected?.weekdays) ? selected.weekdays.join(", ") : "Unavailable"],
-      ["Enabled", selected ? (selected.enabled === true ? "On" : selected.enabled === false ? "Off" : "Unknown") : "On (default)"],
-    ]) {
-      const wrapper = this._node("label", "", label);
-      const input = this._node("input");
-      input.value = val;
+
+    const field = (labelText, input) => {
+      const label = this._node("label", "", labelText);
       input.disabled = true;
-      input.setAttribute("aria-label", label);
-      wrapper.append(input);
-      form.append(wrapper);
+      input.setAttribute("aria-label", labelText);
+      label.append(input);
+      form.append(label);
+    };
+    const name = this._node("input");
+    name.type = "text";
+    name.value = selected?.title || "";
+    field("Schedule name", name);
+
+    const time = this._node("input");
+    time.type = "time";
+    // Unknown timing stays blank: never invent editable source data.
+    time.value = selected?.start || "";
+    field("Start time", time);
+
+    const duration = this._node("select");
+    const choice = selected?.minutes;
+    const durations = [15, 30, 45, 60, 90, 120, 180, 240];
+    const placeholder = this._node("option", "", "Select duration");
+    placeholder.value = "";
+    duration.append(placeholder);
+    for (const minutes of durations) {
+      const option = this._node("option", "", minutes + " minutes");
+      option.value = String(minutes);
+      duration.append(option);
     }
+    duration.value = durations.includes(choice) ? String(choice) : "";
+    field("Duration", duration);
+
+    const weekdaySection = this._node("fieldset");
+    weekdaySection.disabled = true;
+    const legend = this._node("legend", "", "Weekdays");
+    weekdaySection.append(legend);
+    for (const [code, label] of [
+      ["mon", "Mon"], ["tue", "Tue"], ["wed", "Wed"], ["thu", "Thu"],
+      ["fri", "Fri"], ["sat", "Sat"], ["sun", "Sun"]
+    ]) {
+      const wrapper = this._node("label", "day");
+      const checkbox = this._node("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = Array.isArray(selected?.weekdays) && selected.weekdays.includes(code);
+      checkbox.disabled = true;
+      wrapper.append(checkbox, this._node("span", "", label));
+      weekdaySection.append(wrapper);
+    }
+    form.append(weekdaySection);
+
+    const enabledLabel = this._node("label", "enabledToggle");
+    const toggle = this._node("input");
+    toggle.type = "checkbox";
+    toggle.disabled = true;
+    toggle.checked = selected ? selected.enabled === true : true;
+    enabledLabel.append(toggle, this._node("span", "", "Enabled"));
+    form.append(enabledLabel);
+    if (selected && selected.enabled == null)
+      form.append(this._node("p", "notice", "Enabled state unknown"));
+
     form.append(this._node("p", "notice",
-      "Preview only. Validated values are shown when Scheduler exposes a single start-only timeslot. Unavailable values are never guessed. Editing remains disabled."));
+      "Preview only · All fields and Save are disabled. Unknown schedule values remain blank."));
     form.append(this._button("Save — unavailable", () => {}, true));
     card.append(form);
   }
