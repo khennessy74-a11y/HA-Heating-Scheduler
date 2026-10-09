@@ -55,7 +55,7 @@ jobs:
           PY
 
       - name: Run isolated session-policy tests
-        run: python -m unittest discover -s tests -p 'test_*.py' -v
+        run: timeout 120s python -m unittest discover -s tests -p 'test_*.py' -v
 
   hassfest:
     name: Home Assistant hassfest

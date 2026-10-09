@@ -11,3 +11,7 @@ This batch defines a *pure policy*, **not** a working Home Assistant restart han
 ### Remaining integration work
 
 Bind the policy to Home Assistant startup, shutdown and unload semantics in a disposable instance; verify behaviour for power loss, stale persisted markers, failed service calls and external/manual changes. Define explicitly whether turning OFF on shutdown is permitted and how to avoid leaving a heater ON when the process crashes. Keep the controller release and schedule-mutation gates closed in production until then.
+
+## CI timing regression (2026-10-09)
+
+A controller test unintentionally used the production-duration sleep and stalled the offline test suite until the 10-minute job timeout. The test now injects an immediate fake sleep and has an explicit short wait timeout. The CI unittest step has a 120-second cap to surface future blocked tests promptly.

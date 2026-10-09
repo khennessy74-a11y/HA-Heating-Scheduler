@@ -161,10 +161,12 @@ class ControllerTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_manual_off_on_idle_does_not_plant_stale_cancel_flag(self):
         switch = FakeSwitch()
-        ctl = Controller(switch)
+        async def immediate_sleep(seconds):
+            return None
+        ctl = Controller(switch, sleep=immediate_sleep)
         await ctl.notify_manual_off()
         await ctl.start(15)
-        await ctl.wait_finished()
+        await asyncio.wait_for(ctl.wait_finished(), timeout=2)
         self.assertEqual((switch.on_calls, switch.off_calls), (1, 1))
 
     async def test_repeated_manual_off_on_idle_is_noop(self):
