@@ -320,6 +320,82 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
             await second
         self.assertEqual(sum((d, s) == ("scheduler", "add") for d, s, _ in calls), 1)
 
+    async def test_delete_waits_for_in_progress_edit(self):
+        schedules = {
+            "switch.schedule_morning": {
+                "friendly_name": "Scheduler Morning", "state": "off",
+                "actions": [bridge.schedule_action("a", 15)],
+            },
+        }
+        started = asyncio.Event()
+        resume = asyncio.Event()
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service))
+            if (domain, service) == ("scheduler", "edit"):
+                started.set()
+                await resume.wait()
+                schedules["switch.schedule_morning"]["state"] = "on"
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        edit_task = asyncio.create_task(b.edit(
+            entry_id="a", entity_id="switch.schedule_morning",
+            name="Morning", start="07:00", weekdays=["mon"],
+            minutes=15, enabled=True,
+        ))
+        await asyncio.wait_for(started.wait(), timeout=1)
+        remove_task = asyncio.create_task(
+            b.remove(entry_id="a", entity_id="switch.schedule_morning")
+        )
+        await asyncio.sleep(0)
+        resume.set()
+        await edit_task
+        with self.assertRaisesRegex(bridge.ScheduleError, "Disable"):
+            await remove_task
+        self.assertNotIn(("scheduler", "remove"), calls)
+
+    async def test_concurrent_duplicate_name_edits_are_serialised(self):
+        schedules = {
+            "switch.schedule_one": {
+                "friendly_name": "Scheduler One", "state": "off",
+                "actions": [bridge.schedule_action("a", 15)],
+            },
+            "switch.schedule_two": {
+                "friendly_name": "Scheduler Two", "state": "off",
+                "actions": [bridge.schedule_action("a", 15)],
+            },
+        }
+        edit_entered = asyncio.Event()
+        release_edit = asyncio.Event()
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service, data))
+            if (domain, service) == ("scheduler", "edit"):
+                if data["entity_id"] == "switch.schedule_one":
+                    edit_entered.set()
+                    await release_edit.wait()
+                schedules[data["entity_id"]]["friendly_name"] = "Scheduler Shared"
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        def attempt(entity_id):
+            return b.edit(
+                entry_id="a", entity_id=entity_id, name="Shared",
+                start="07:00", weekdays=["mon"], minutes=15, enabled=False,
+            )
+        first = asyncio.create_task(attempt("switch.schedule_one"))
+        await asyncio.wait_for(edit_entered.wait(), timeout=1)
+        second = asyncio.create_task(attempt("switch.schedule_two"))
+        await asyncio.sleep(0)
+        release_edit.set()
+        await first
+        with self.assertRaisesRegex(bridge.ScheduleError, "Duplicate"):
+            await second
+        self.assertEqual(
+            sum((d, s) == ("scheduler", "edit") for d, s, _ in calls), 1
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

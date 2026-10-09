@@ -5,6 +5,11 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Superseded pushes on the same branch do not need duplicate full validation.
+concurrency:
+  group: heating-scheduler-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
