@@ -8,6 +8,23 @@ A community Home Assistant heating scheduler project, developed on GitHub.
 
 A GitHub-distributed custom integration for timed heating, using [Scheduler Component](https://github.com/nielsfaber/scheduler-component) as the recurring scheduling engine. **HACS is not required to install this project** (although Scheduler Component is a separately installed dependency).
 
+## Prerequisites
+
+**Heating Scheduler integration (backend):**
+- Home Assistant with an available `switch.*` entity for the device you eventually plan to control.
+- [Scheduler Component](https://github.com/nielsfaber/scheduler-component) for recurring schedules (separate custom integration).
+- Manual installation from GitHub is supported; **HACS is not required to install Heating Scheduler itself**. HACS is a convenient way to install/manage some optional custom dependencies.
+
+**Approved Lovelace mobile dashboard (additional frontend prerequisites):**
+- [Bubble Card](https://github.com/Clooos/Bubble-Card) — popup interface.
+- [Mushroom Cards](https://github.com/piitaya/lovelace-mushroom) — dashboard controls/cards.
+- [Auto-Entities](https://github.com/thomasloven/lovelace-auto-entities) — dynamic schedule lists.
+- [Button Card](https://github.com/custom-cards/button-card) — schedule rows and actions.
+- [Card Mod](https://github.com/thomasloven/lovelace-card-mod) — appearance and spacing.
+- [Super Text Inputs](https://github.com/iantrich/text-input-row) — **verify the exact custom text-input card used by the final dashboard YAML before publishing a dependency link**.
+
+These frontend components are required **only if the finished dashboard actually uses them**. They are not needed for backend-only setup or GitHub CI checks. The integration-native dashboard is still being developed; we will verify the exact dependency list against its final YAML before release.
+
 ## Tested reference implementation
 
 The existing YAML-package-based scheduler is the functional reference. Its tested features include:
