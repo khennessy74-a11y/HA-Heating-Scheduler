@@ -2,6 +2,9 @@
 
 **Development preview — do not connect to production heating.**
 
+**Current testing preference:** do not install this into the existing Home Assistant instance. First pass GitHub Actions Hassfest, isolated mocked tests, and (later) tests against real Home Assistant Python libraries or a disposable instance. This file is reserved for a future, separately approved installation test.
+
+
 ## 1. Before installing
 
 - Confirm the latest GitHub Actions validation passes.
