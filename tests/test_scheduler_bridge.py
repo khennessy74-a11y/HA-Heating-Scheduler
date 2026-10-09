@@ -41,21 +41,15 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(bridge.owned_schedule("switch.schedule_a", attrs, "b"))
         self.assertFalse(bridge.owned_schedule("switch.heating", attrs, "a"))
 
-    async def test_add_disabled_targets_only_created_schedule(self):
-        schedules = {}
+    async def test_add_disabled_is_rejected_before_service_call(self):
         calls = []
         async def call(domain, service, data):
             calls.append((domain, service, data))
-            if (domain, service) == ("scheduler", "add"):
-                schedules["switch.schedule_new"] = {
-                    "friendly_name": "Scheduler New", "state": "on",
-                    "actions": [bridge.schedule_action("a", 15)],
-                }
-        b = bridge.SchedulerBridge(call, lambda: schedules)
-        created = await b.add(entry_id="a", name="New", start="05:30",
-                              weekdays=["mon"], minutes=15, enabled=False)
-        self.assertEqual(created, "switch.schedule_new")
-        self.assertEqual(calls[-1], ("switch", "turn_off", {"entity_id": created}))
+        b = bridge.SchedulerBridge(call, lambda: {})
+        with self.assertRaisesRegex(bridge.ScheduleError, "not supported safely"):
+            await b.add(entry_id="a", name="New", start="05:30",
+                        weekdays=["mon"], minutes=15, enabled=False)
+        self.assertEqual(calls, [])
 
     async def test_cannot_delete_foreign_or_enabled(self):
         schedules = {
@@ -233,7 +227,7 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(bridge.ScheduleError, "Ambiguous"):
             await b.add(
                 entry_id="a", name="Morning", start="06:30",
-                weekdays=["mon"], minutes=15, enabled=False,
+                weekdays=["mon"], minutes=15, enabled=True,
             )
         self.assertEqual([(d, s) for d, s, _ in calls], [("scheduler", "add")])
 
@@ -253,7 +247,7 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(bridge.ScheduleError, "cannot be identified"):
             await b.add(
                 entry_id="a", name="Morning", start="06:30",
-                weekdays=["mon"], minutes=15, enabled=False,
+                weekdays=["mon"], minutes=15, enabled=True,
             )
         self.assertEqual([(d, s) for d, s, _ in calls], [("scheduler", "add")])
 
@@ -409,7 +403,7 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(RuntimeError, "Scheduler unavailable"):
             await b.add(
                 entry_id="a", name="Morning", start="06:00",
-                weekdays=["mon"], minutes=15, enabled=False,
+                weekdays=["mon"], minutes=15, enabled=True,
             )
         self.assertEqual(calls, [("scheduler", "add")])
 

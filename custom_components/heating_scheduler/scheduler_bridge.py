@@ -111,6 +111,11 @@ class SchedulerBridge:
     ) -> str:
         async with self._mutation_lock:
             validate_schedule(name, start, weekdays, minutes)
+            if enabled is not True:
+                raise ScheduleError(
+                    "Creating disabled schedules is not supported safely by "
+                    "Scheduler Component: scheduler.add initially enables them"
+                )
             self._reject_duplicate(entry_id, name)
             before = set(self._owned(entry_id))
             await self._call("scheduler", "add", {

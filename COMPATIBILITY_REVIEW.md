@@ -23,3 +23,11 @@ This is a development pre-release. Do **not** install it in the Home Assistant i
 Do not enable physical heating service registrations or schedule-write opt-in until the above cases have been demonstrated in a **disposable** Home Assistant instance using a non-heating test switch.
 
 The existing production YAML must remain unchanged. No automatic migration or recovery action may affect legacy schedules.
+
+## Verified safety blocker: disabled-on-create (2026-10-09)
+
+Upstream `custom_components/scheduler/store.py` declares `ScheduleEntry.enabled` with `default=True`. Upstream `const.py` `ADD_SCHEDULE_SCHEMA` does **not** accept an `enabled` field. Therefore `scheduler.add` cannot atomically create a disabled schedule via its public service, and calling `switch.turn_off` afterwards creates an activation window.
+
+**Fail-closed mitigation:** Our Scheduler bridge now rejects `enabled=False` at creation *before* calling any Home Assistant service. This temporarily removes a reference-YAML feature from the integration preview. It is an intentional safety restriction until a safe, verified backend design exists.
+
+Source: https://github.com/nielsfaber/scheduler-component/blob/main/custom_components/scheduler/store.py and https://github.com/nielsfaber/scheduler-component/blob/main/custom_components/scheduler/const.py
