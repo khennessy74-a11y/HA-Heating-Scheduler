@@ -57,6 +57,24 @@ jobs:
       - name: Run isolated session-policy tests
         run: timeout 120s python -m unittest discover -s tests -p 'test_*.py' -v
 
+  dashboard-js:
+    name: Dashboard JavaScript runtime checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate card syntax
+        run: |
+          node --check dashboard/heating-scheduler-read-only-card.js
+          node --check dashboard/heating-scheduler-workflow-preview.js
+      - name: Exercise read-only dashboard navigation
+        run: node --test dashboard/tests/*.test.cjs
+
   hassfest:
     name: Home Assistant hassfest
     runs-on: ubuntu-latest
