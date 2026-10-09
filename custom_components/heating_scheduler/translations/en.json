@@ -1,0 +1,18 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure Heating Scheduler",
+        "description": "Development preview. Select a TEST switch only; scheduling is not active yet.",
+        "data": {
+          "target_entity": "Heating switch (test device)",
+          "label": "Name"
+        }
+      }
+    },
+    "error": {
+      "already_configured": "This switch already has a Heating Scheduler entry.",
+      "missing_entity": "The selected switch is unavailable."
+    }
+  }
+}
