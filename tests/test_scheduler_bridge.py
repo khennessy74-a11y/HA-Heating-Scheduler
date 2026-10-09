@@ -472,5 +472,34 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(calls, [])
 
 
+    async def test_owned_schedule_real_scheduler_action_shape(self):
+        """Scheduler Component exposes service and service_data on switch actions."""
+        attrs = {
+            "friendly_name": "Scheduler Test",
+            "state": "off",
+            "actions": [{
+                "service": "heating_scheduler.start",
+                "service_data": {"entry_id": "entry_a", "minutes": 60},
+            }],
+        }
+        self.assertTrue(bridge.owned_schedule(
+            "switch.schedule_test", attrs, "entry_a",
+        ))
+        self.assertFalse(bridge.owned_schedule(
+            "switch.schedule_test", attrs, "entry_b",
+        ))
+
+    async def test_unrecognised_action_never_claims_ownership(self):
+        attrs = {
+            "friendly_name": "Scheduler Other",
+            "state": "on",
+            "actions": [{"service": "switch.turn_on",
+                         "entity_id": "switch.heating"}],
+        }
+        self.assertFalse(bridge.owned_schedule(
+            "switch.schedule_other", attrs, "entry_a",
+        ))
+
+
 if __name__ == "__main__":
     unittest.main()
