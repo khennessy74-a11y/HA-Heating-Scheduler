@@ -21,7 +21,8 @@
 - [x] Define read-only owned schedule list data with unknown-safe UI state fields
 - [x] Build a dynamic read-only mobile list presentation contract
 - [x] Expose list through a read-only Home Assistant response service
-- [ ] Connect response service to an actual mobile dashboard display
+- [x] Implement read-only Lovelace card fetching response-service data
+- [ ] Run browser/UI and actual Scheduler Component tests in a disposable HA installation
 - [ ] Verify structured Scheduler Component timing source before enabling an edit form
 - [ ] One-column Heating Control schedule rows
 - [ ] Tap row to load Add/Edit (not enable/disable)
