@@ -67,6 +67,7 @@ class SchedulerBridge:
     def __init__(self, call: ActionCall, get_schedules: GetSchedules) -> None:
         self._call = call
         self._get_schedules = get_schedules
+        self._mutation_lock = asyncio.Lock()
 
     def _owned(self, entry_id: str) -> dict[str, Mapping[str, Any]]:
         return {
@@ -108,16 +109,17 @@ class SchedulerBridge:
         self, *, entry_id: str, name: str, start: str, weekdays: list[str],
         minutes: int, enabled: bool = True,
     ) -> str:
-        validate_schedule(name, start, weekdays, minutes)
-        self._reject_duplicate(entry_id, name)
-        before = set(self._owned(entry_id))
-        await self._call("scheduler", "add", {
-            "name": name.strip(), "weekdays": weekdays, "repeat_type": "repeat",
-            "timeslots": [{"start": start, "actions": [schedule_action(entry_id, minutes)]}],
-        })
-        entity_id = await self.resolve_new(entry_id, name, before)
-        await self.set_enabled(entity_id, enabled)
-        return entity_id
+        async with self._mutation_lock:
+            validate_schedule(name, start, weekdays, minutes)
+            self._reject_duplicate(entry_id, name)
+            before = set(self._owned(entry_id))
+            await self._call("scheduler", "add", {
+                "name": name.strip(), "weekdays": weekdays, "repeat_type": "repeat",
+                "timeslots": [{"start": start, "actions": [schedule_action(entry_id, minutes)]}],
+            })
+            entity_id = await self.resolve_new(entry_id, name, before)
+            await self.set_enabled(entity_id, enabled)
+            return entity_id
 
     async def resolve_edited(
         self, entry_id: str, original_id: str, name: str, before: set[str],
@@ -151,32 +153,34 @@ class SchedulerBridge:
         weekdays: list[str], minutes: int, enabled: bool,
     ) -> str:
         """Edit an owned schedule; apply state only to its verified identity."""
-        validate_schedule(name, start, weekdays, minutes)
-        owned = self._owned(entry_id)
-        if entity_id not in owned:
-            raise ScheduleError("Cannot edit an unowned schedule")
-        self._reject_duplicate(entry_id, name, ignore=entity_id)
-        before = set(owned)
-        original_name = schedule_name(owned[entity_id])
-        payload: dict[str, Any] = {
-            "entity_id": entity_id,
-            "weekdays": weekdays,
-            "timeslots": [{
-                "start": start,
-                "actions": [schedule_action(entry_id, minutes)],
-            }],
-        }
-        if name.strip() != original_name:
-            payload["name"] = name.strip()
-        await self._call("scheduler", "edit", payload)
-        resolved = await self.resolve_edited(entry_id, entity_id, name, before)
-        await self.set_enabled(resolved, enabled)
-        return resolved
+        async with self._mutation_lock:
+            validate_schedule(name, start, weekdays, minutes)
+            owned = self._owned(entry_id)
+            if entity_id not in owned:
+                raise ScheduleError("Cannot edit an unowned schedule")
+            self._reject_duplicate(entry_id, name, ignore=entity_id)
+            before = set(owned)
+            original_name = schedule_name(owned[entity_id])
+            payload: dict[str, Any] = {
+                "entity_id": entity_id,
+                "weekdays": weekdays,
+                "timeslots": [{
+                    "start": start,
+                    "actions": [schedule_action(entry_id, minutes)],
+                }],
+            }
+            if name.strip() != original_name:
+                payload["name"] = name.strip()
+            await self._call("scheduler", "edit", payload)
+            resolved = await self.resolve_edited(entry_id, entity_id, name, before)
+            await self.set_enabled(resolved, enabled)
+            return resolved
 
     async def remove(self, *, entry_id: str, entity_id: str) -> None:
-        attrs = self._owned(entry_id).get(entity_id)
-        if attrs is None:
-            raise ScheduleError("Cannot delete an unowned schedule")
-        if attrs.get("state") != "off":
-            raise ScheduleError("Disable schedule before deletion")
-        await self._call("scheduler", "remove", {"entity_id": entity_id})
+        async with self._mutation_lock:
+            attrs = self._owned(entry_id).get(entity_id)
+            if attrs is None:
+                raise ScheduleError("Cannot delete an unowned schedule")
+            if attrs.get("state") != "off":
+                raise ScheduleError("Disable schedule before deletion")
+            await self._call("scheduler", "remove", {"entity_id": entity_id})
