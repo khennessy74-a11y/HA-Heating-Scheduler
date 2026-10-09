@@ -114,7 +114,15 @@ jobs:
           from custom_components.heating_scheduler.service_registration import (
               schedule_writes_allowed,
               async_register_schedule_services,
+              SCHEDULE_MUTATIONS_RELEASED,
           )
+          from custom_components.heating_scheduler.runtime import (
+              HEATING_RUNTIME_RELEASED,
+              HeatingRuntimeUnavailable,
+              HeatingRuntimeCoordinator,
+          )
+          assert HEATING_RUNTIME_RELEASED is False
+          assert SCHEDULE_MUTATIONS_RELEASED is False
           from homeassistant.exceptions import ServiceValidationError
           from types import SimpleNamespace
           from unittest.mock import AsyncMock
@@ -160,6 +168,51 @@ jobs:
                       raise AssertionError(f"Unexpected service acceptance: {name}")
               assert not local.services.calls.called
           asyncio.run(lifecycle_smoke())
+
+          # Lifecycle safety remains enforced with a manually opted-in entry.
+          async def gated_runtime_smoke():
+              constructed = []
+              def make_switch(entry_id):
+                  constructed.append(entry_id)
+                  raise AssertionError("Switch construction must remain disabled")
+              runtime = HeatingRuntimeCoordinator(make_switch)
+              for action in (runtime.start("test_entry", 15),
+                             runtime.stop("test_entry")):
+                  try:
+                      await action
+                  except HeatingRuntimeUnavailable:
+                      pass
+                  else:
+                      raise AssertionError("Hardware runtime unexpectedly enabled")
+              assert not constructed
+              assert not runtime.active_entries
+
+              entry = SimpleNamespace(
+                  entry_id="test_entry", data={"target_entity": "switch.test_only"},
+                  domain="heating_scheduler",
+                  options={"enable_schedule_writes": True},
+              )
+              local = InMemoryHA()
+              local.entry = entry
+              await package.async_setup(local, {})
+              await package.async_setup_entry(local, entry)
+              assert not schedule_writes_allowed(local, "test_entry")
+              for name, (handler, schema) in [
+                  (name, pair)
+                  for (domain, name), pair in local.services.handlers.items()
+              ]:
+                  try:
+                      await handler(SimpleNamespace(service=name, data={
+                          "entry_id": "test_entry"
+                      }))
+                  except ServiceValidationError:
+                      pass
+                  else:
+                      raise AssertionError(f"Write bypassed gate: {name}")
+              assert not local.services.calls.called
+              await package.async_unload_entry(local, entry)
+              assert not schedule_writes_allowed(local, "test_entry")
+          asyncio.run(gated_runtime_smoke())
 
           hass = InMemoryHA()
           async_register_schedule_services(hass)
