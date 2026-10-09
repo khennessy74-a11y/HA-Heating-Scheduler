@@ -93,6 +93,24 @@ jobs:
       - name: Test mobile UI in real browser
         run: timeout 240s node --test dashboard/browser-tests/*.test.cjs
 
+  scheduler-upstream:
+    name: Actual Scheduler Component schema contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Heating Scheduler
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install Home Assistant schema dependencies
+        run: python -m pip install --disable-pip-version-check homeassistant
+      - name: Fetch isolated Scheduler Component source
+        run: git clone --depth=1 https://github.com/nielsfaber/scheduler-component.git /tmp/scheduler-component
+      - name: Validate bridge payload against actual upstream schemas
+        run: timeout 120s python tests/upstream_scheduler_contract.py /tmp/scheduler-component/custom_components/scheduler/const.py
+
   hassfest:
     name: Home Assistant hassfest
     runs-on: ubuntu-latest
