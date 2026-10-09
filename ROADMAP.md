@@ -22,7 +22,8 @@
 - [x] Build a dynamic read-only mobile list presentation contract
 - [x] Expose list through a read-only Home Assistant response service
 - [x] Implement read-only Lovelace card fetching response-service data
-- [ ] Run browser/UI and actual Scheduler Component tests in a disposable HA installation
+- [x] Run real Chromium mobile UI checks with a fake Home Assistant client
+- [ ] Test actual Scheduler Component in a disposable Home Assistant installation
 - [ ] Verify structured Scheduler Component timing source before enabling an edit form
 - [x] Read-only mobile navigation prototype for Heating Control, Manage and Add/Edit
 - [ ] One-column Heating Control schedule rows (final Bubble/Mushroom integration)

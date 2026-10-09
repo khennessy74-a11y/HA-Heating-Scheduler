@@ -75,6 +75,24 @@ jobs:
       - name: Exercise read-only dashboard navigation
         run: node --test dashboard/tests/*.test.cjs
 
+  dashboard-browser:
+    name: Real Chromium dashboard checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install headless Chromium test runtime
+        run: |
+          npm install --no-save --no-package-lock @playwright/test
+          npx playwright install --with-deps chromium
+      - name: Test mobile UI in real browser
+        run: timeout 240s node --test dashboard/browser-tests/*.test.cjs
+
   hassfest:
     name: Home Assistant hassfest
     runs-on: ubuntu-latest
