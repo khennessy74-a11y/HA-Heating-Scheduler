@@ -14,6 +14,8 @@ from .const import DOMAIN
 from .ha_scheduler_services import HomeAssistantSchedulerServices
 
 OPT_ENABLE_SCHEDULE_WRITES = "enable_schedule_writes"
+# Hard release gate: do not allow schedule mutation before heating start exists.
+SCHEDULE_MUTATIONS_RELEASED = False
 _REGISTERED_KEY = "_schedule_services_registered"
 
 _COMMON = {
@@ -38,7 +40,8 @@ def schedule_writes_allowed(hass: HomeAssistant, entry_id: str) -> bool:
     """Only a loaded, explicitly opted-in entry may mutate schedules."""
     entry = hass.config_entries.async_get_entry(entry_id)
     return bool(
-        entry is not None
+        SCHEDULE_MUTATIONS_RELEASED
+        and entry is not None
         and entry.domain == DOMAIN
         and entry_id in hass.data.get(DOMAIN, {})
         and entry.options.get(OPT_ENABLE_SCHEDULE_WRITES) is True

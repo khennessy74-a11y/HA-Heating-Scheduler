@@ -31,3 +31,9 @@ Upstream `custom_components/scheduler/store.py` declares `ScheduleEntry.enabled`
 **Fail-closed mitigation:** Our Scheduler bridge now rejects `enabled=False` at creation *before* calling any Home Assistant service. This temporarily removes a reference-YAML feature from the integration preview. It is an intentional safety restriction until a safe, verified backend design exists.
 
 Source: https://github.com/nielsfaber/scheduler-component/blob/main/custom_components/scheduler/store.py and https://github.com/nielsfaber/scheduler-component/blob/main/custom_components/scheduler/const.py
+
+## Hard release gate: service-target dependency (2026-10-09)
+
+Upstream Scheduler Component actions require a service name, and the preview bridge generates `heating_scheduler.start` actions. The Heating Scheduler integration has not yet registered `heating_scheduler.start`. Consequently, schedule writes MUST NOT be enabled even by manually adding the `enable_schedule_writes` option. `SCHEDULE_MUTATIONS_RELEASED = False` in `service_registration.py` now blocks all add/edit/remove requests until a future reviewed release explicitly changes the code. Creating schedules is not yet supported.
+
+This is separate from the disabled-on-create risk, which remains blocked.

@@ -27,6 +27,8 @@
 - [x] Isolated mock tests for ownership, concurrency, ambiguous rename and service denials
 - [x] Test failed Scheduler API calls and unavailable schedule-state deletion
 - [ ] Confirm Scheduler Component's actual service payload shape, action attribute shape and entity naming across supported versions
+- [x] Hard-block schedule mutations pending registration and testing of heating_scheduler.start
+- [ ] Implement and validate heating_scheduler.start before considering removal of the write hard gate
 - [ ] Test the **initially disabled** schedule-create path for any activation window between add and turn_off; block release until verified
 - [ ] Confirm state changes after switch enable/disable, not merely successful service calls
 - [ ] Ensure entry ownership is robust for all Scheduler action representations

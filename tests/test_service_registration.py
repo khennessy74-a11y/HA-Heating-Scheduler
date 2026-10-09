@@ -85,9 +85,17 @@ class RegistrationTests(unittest.IsolatedAsyncioTestCase):
         hass = FakeHass({"enable_schedule_writes": "true"})
         self.assertFalse(registration.schedule_writes_allowed(hass, "entry_a"))
         hass.entry.options["enable_schedule_writes"] = True
-        self.assertTrue(registration.schedule_writes_allowed(hass, "entry_a"))
+        self.assertFalse(registration.schedule_writes_allowed(hass, "entry_a"))
+        # Even a manually set option must not override the release gate.
         hass.data["heating_scheduler"].pop("entry_a")
         self.assertFalse(registration.schedule_writes_allowed(hass, "entry_a"))
+
+    async def test_force_opted_in_entry_cannot_mutate_until_runtime_released(self):
+        hass = FakeHass({"enable_schedule_writes": True})
+        registration.async_register_schedule_services(hass)
+        for name, (handler, _) in hass.services.handlers.items():
+            with self.subTest(name=name), self.assertRaises(exceptions.ServiceValidationError):
+                await handler(types.SimpleNamespace(service=name, data={"entry_id": "entry_a"}))
 
     async def test_unknown_entry_rejected(self):
         hass = FakeHass({"enable_schedule_writes": True})
