@@ -82,6 +82,8 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
 
         async def call(domain, service, data):
             calls.append((domain, service, data))
+            if (domain, service) == ("switch", "turn_off"):
+                schedules[data["entity_id"]]["state"] = "off"
             if (domain, service) == ("scheduler", "edit"):
                 schedules.pop("switch.schedule_old")
                 schedules["switch.schedule_renamed"] = {
@@ -112,6 +114,8 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
 
         async def call(domain, service, data):
             calls.append((domain, service, data))
+            if (domain, service) == ("switch", "turn_on"):
+                schedules[data["entity_id"]]["state"] = "on"
 
         b = bridge.SchedulerBridge(call, lambda: schedules)
         result = await b.edit(

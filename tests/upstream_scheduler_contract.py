@@ -45,8 +45,8 @@ async def validate_schema_payloads():
             })
         elif domain == "switch":
             assert name in ("turn_on", "turn_off")
-            assert data["entity_id"] in owned
-            owned[data["entity_id"]]["state"] = (
+            assert payload["entity_id"] in owned
+            owned[payload["entity_id"]]["state"] = (
                 "on" if name == "turn_on" else "off"
             )
 
