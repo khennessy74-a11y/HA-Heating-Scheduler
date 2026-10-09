@@ -38,3 +38,7 @@ The target v1 switch types are smart power outlets, relays, Zigbee/Z-Wave and ES
 Heating control must not be treated as a substitute for electrical, overtemperature, or hardware protection. Use appropriately rated switches and heaters.
 
 See [ROADMAP.md](ROADMAP.md) for planned work.
+
+## Support the project ☕
+
+If this Heating Scheduler is useful and you'd like to support its development, [buy me a coffee](https://buymeacoffee.com/khennessy74). Contributions are entirely optional.
