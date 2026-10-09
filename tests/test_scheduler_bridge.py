@@ -73,5 +73,128 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
             await b.remove(entry_id="a", entity_id="switch.schedule_mine")
 
 
+    async def test_edit_rename_and_disable_new_entity(self):
+        schedules = {
+            "switch.schedule_old": {
+                "friendly_name": "Scheduler Old", "state": "on",
+                "actions": [bridge.schedule_action("a", 15)],
+            },
+            "switch.schedule_other": {
+                "friendly_name": "Scheduler Other", "state": "on",
+                "actions": [bridge.schedule_action("b", 15)],
+            },
+        }
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service, data))
+            if (domain, service) == ("scheduler", "edit"):
+                schedules.pop("switch.schedule_old")
+                schedules["switch.schedule_renamed"] = {
+                    "friendly_name": "Scheduler Renamed", "state": "on",
+                    "actions": [bridge.schedule_action("a", 30)],
+                }
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        result = await b.edit(
+            entry_id="a", entity_id="switch.schedule_old", name="Renamed",
+            start="05:45", weekdays=["tue"], minutes=30, enabled=False,
+        )
+        self.assertEqual(result, "switch.schedule_renamed")
+        self.assertEqual(calls[0][2]["name"], "Renamed")
+        self.assertEqual(
+            calls[-1],
+            ("switch", "turn_off", {"entity_id": "switch.schedule_renamed"}),
+        )
+
+    async def test_edit_without_rename_preserves_name(self):
+        schedules = {
+            "switch.schedule_existing": {
+                "friendly_name": "Scheduler Existing", "state": "off",
+                "actions": [bridge.schedule_action("a", 15)],
+            },
+        }
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service, data))
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        result = await b.edit(
+            entry_id="a", entity_id="switch.schedule_existing", name="Existing",
+            start="08:30", weekdays=["wed"], minutes=60, enabled=True,
+        )
+        self.assertEqual(result, "switch.schedule_existing")
+        self.assertNotIn("name", calls[0][2])
+        self.assertEqual(calls[-1][1], "turn_on")
+
+    async def test_edit_rejects_duplicate_before_any_write(self):
+        schedules = {
+            "switch.schedule_first": {
+                "friendly_name": "Scheduler First",
+                "actions": [bridge.schedule_action("a", 15)],
+            },
+            "switch.schedule_second": {
+                "friendly_name": "Scheduler Second",
+                "actions": [bridge.schedule_action("a", 15)],
+            },
+        }
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service, data))
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        with self.assertRaisesRegex(bridge.ScheduleError, "Duplicate"):
+            await b.edit(
+                entry_id="a", entity_id="switch.schedule_first", name="second",
+                start="09:00", weekdays=["mon"], minutes=15, enabled=False,
+            )
+        self.assertEqual(calls, [])
+
+    async def test_edit_rejects_foreign_schedule_before_any_write(self):
+        schedules = {
+            "switch.schedule_foreign": {
+                "friendly_name": "Scheduler Foreign",
+                "actions": [bridge.schedule_action("other", 15)],
+            },
+        }
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service, data))
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        with self.assertRaises(bridge.ScheduleError):
+            await b.edit(
+                entry_id="a", entity_id="switch.schedule_foreign", name="Foreign",
+                start="09:00", weekdays=["mon"], minutes=15, enabled=True,
+            )
+        self.assertEqual(calls, [])
+
+    async def test_unresolved_rename_does_not_toggle_other_schedule(self):
+        schedules = {
+            "switch.schedule_old": {
+                "friendly_name": "Scheduler Old",
+                "actions": [bridge.schedule_action("a", 15)],
+            },
+        }
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service, data))
+            # Simulate a rename that never becomes visible.
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        with self.assertRaisesRegex(bridge.ScheduleError, "identified safely"):
+            await b.edit(
+                entry_id="a", entity_id="switch.schedule_old", name="New",
+                start="09:00", weekdays=["mon"], minutes=15, enabled=False,
+            )
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][1], "edit")
+
+
+
 if __name__ == "__main__":
     unittest.main()
