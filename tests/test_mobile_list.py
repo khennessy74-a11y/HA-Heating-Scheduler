@@ -81,3 +81,25 @@ class MobileListTests(unittest.TestCase):
         )["items"][0]
         self.assertEqual(item["status"], "Unknown")
         self.assertFalse(item["can_delete_after_confirmation"])
+
+    def test_read_only_form_fields_from_owned_schedule(self):
+        attrs = {
+            "state": "on", "friendly_name": "Scheduler Morning",
+            "actions": [bridge.schedule_action("mine", 60)],
+            "weekdays": ["mon", "tue"], "timeslots": ["06:30"],
+        }
+        item = mobile.mobile_schedule_list({"switch.schedule_morning": attrs}, "mine")["items"][0]
+        self.assertEqual(item["start"], "06:30")
+        self.assertEqual(item["minutes"], 60)
+        self.assertEqual(item["weekdays"], ["mon", "tue"])
+        self.assertIs(item["enabled"], True)
+
+    def test_ranged_timeslot_does_not_guess_start(self):
+        attrs = {
+            "state": "off", "friendly_name": "Scheduler Ranged",
+            "actions": [bridge.schedule_action("mine", 30)],
+            "weekdays": ["fri"], "timeslots": ["06:30 - 07:00"],
+        }
+        item = mobile.mobile_schedule_list({"switch.schedule_ranged": attrs}, "mine")["items"][0]
+        self.assertIsNone(item["start"])
+        self.assertIs(item["enabled"], False)

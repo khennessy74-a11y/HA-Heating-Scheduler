@@ -19,6 +19,10 @@ def mobile_schedule_list(
             "entity_id": row["entity_id"],
             "title": row["name"] or "Unnamed schedule",
             "subtitle": _subtitle(row),
+            "start": row["start"],
+            "minutes": row["minutes"],
+            "weekdays": row["weekdays"],
+            "enabled": row["enabled"],
             "status": ("Enabled" if enabled is True
                        else "Disabled" if enabled is False else "Unknown"),
             "status_color": ("green" if enabled is True

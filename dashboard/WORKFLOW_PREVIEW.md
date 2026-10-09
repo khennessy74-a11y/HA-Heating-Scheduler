@@ -28,3 +28,7 @@ entry_id: YOUR_DISPOSABLE_TEST_ENTRY_ID
 Use only in a disposable test installation. It is **not** a replacement for
 the working legacy dashboard and is not the final Bubble/Mushroom popup UI.
 Actual browser and Scheduler Component integration tests remain outstanding.
+
+## Verified display fields (upstream Scheduler Component switch.py)
+
+Scheduler Component exposes `weekdays`, `actions` and `timeslots` as switch state attributes. For a single start-only timeslot, it exposes an `HH:MM` string, so the read-only mobile response now carries validated `start`, `minutes`, `weekdays` and `enabled` fields into the disabled Add/Edit preview. More complex or incomplete timeslots show `Unavailable`. Nothing becomes editable. This is **not** a complete structured Scheduler editor integration.

@@ -147,10 +147,10 @@ class HeatingSchedulerWorkflowPreview extends HTMLElement {
     const selected = this._selected;
     for (const [label, val] of [
       ["Schedule name", selected?.title || ""],
-      ["Start time", ""],
-      ["Duration (minutes)", ""],
-      ["Weekdays", ""],
-      ["Enabled", selected?.status || "Enabled (new schedules)"],
+      ["Start time", selected?.start ?? "Unavailable"],
+      ["Duration (minutes)", selected?.minutes ?? "Unavailable"],
+      ["Weekdays", Array.isArray(selected?.weekdays) ? selected.weekdays.join(", ") : "Unavailable"],
+      ["Enabled", selected ? (selected.enabled === true ? "On" : selected.enabled === false ? "Off" : "Unknown") : "On (default)"],
     ]) {
       const wrapper = this._node("label", "", label);
       const input = this._node("input");
@@ -161,7 +161,7 @@ class HeatingSchedulerWorkflowPreview extends HTMLElement {
       form.append(wrapper);
     }
     form.append(this._node("p", "notice",
-      "Preview only. Existing start time, duration and weekdays are not prefilled until structured Scheduler data is verified."));
+      "Preview only. Validated values are shown when Scheduler exposes a single start-only timeslot. Unavailable values are never guessed. Editing remains disabled."));
     form.append(this._button("Save — unavailable", () => {}, true));
     card.append(form);
   }
