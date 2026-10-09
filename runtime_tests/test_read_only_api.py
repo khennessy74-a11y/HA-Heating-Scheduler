@@ -6,14 +6,16 @@ from homeassistant.exceptions import HomeAssistantError
 from custom_components.heating_scheduler import async_setup, async_setup_entry, async_unload_entry
 from custom_components.heating_scheduler.const import DOMAIN
 from types import SimpleNamespace
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 
 @pytest.mark.asyncio
 async def test_read_only_schedule_list_uses_entry_ownership(hass, enable_custom_integrations):
-    entry = SimpleNamespace(
+    entry = MockConfigEntry(
         entry_id="read_only_owner", domain=DOMAIN,
         data={"target_entity": "switch.disposable_heater"}, options={},
     )
+    entry.add_to_hass(hass)
     hass.states.async_set("switch.disposable_heater", "off")
     hass.states.async_set("switch.schedule_owned", "on", {
         "friendly_name": "Scheduler Morning",
