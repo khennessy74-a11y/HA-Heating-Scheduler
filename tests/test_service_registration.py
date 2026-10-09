@@ -94,5 +94,43 @@ class RegistrationTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(registration.schedule_writes_allowed(hass, "missing"))
 
 
+    async def test_reject_invalid_schedule_fields_before_dispatch(self):
+        hass = FakeHass({"enable_schedule_writes": True})
+        registration.async_register_schedule_services(hass)
+        _, schema = hass.services.handlers["add_schedule"]
+        good = {
+            "entry_id": "entry_a", "name": "Morning", "start": "06:00",
+            "weekdays": ["mon"], "minutes": 60, "enabled": True,
+        }
+        for bad in (
+            {"minutes": "not-a-number"},
+            {"weekdays": "mon"},
+            {"enabled": "invalid-bool"},
+        ):
+            with self.subTest(bad=bad), self.assertRaises(vol.Invalid):
+                schema({**good, **bad})
+
+    async def test_entry_of_other_integration_is_not_authorised(self):
+        hass = FakeHass({"enable_schedule_writes": True})
+        hass.entry.domain = "other_integration"
+        self.assertFalse(registration.schedule_writes_allowed(hass, "entry_a"))
+
+    async def test_unknown_entry_rejected_by_registered_handler(self):
+        hass = FakeHass({"enable_schedule_writes": True})
+        registration.async_register_schedule_services(hass)
+        handler, schema = hass.services.handlers["remove_schedule"]
+        data = schema({"entry_id": "missing", "entity_id": "switch.schedule_morning"})
+        with self.assertRaises(exceptions.ServiceValidationError):
+            await handler(types.SimpleNamespace(service="remove_schedule", data=data))
+
+    async def test_all_handlers_reject_after_entry_unloaded(self):
+        hass = FakeHass({"enable_schedule_writes": True})
+        registration.async_register_schedule_services(hass)
+        hass.data["heating_scheduler"].pop("entry_a")
+        for name, (handler, _) in hass.services.handlers.items():
+            with self.subTest(name=name), self.assertRaises(exceptions.ServiceValidationError):
+                await handler(types.SimpleNamespace(service=name, data={"entry_id": "entry_a"}))
+
+
 if __name__ == "__main__":
     unittest.main()
