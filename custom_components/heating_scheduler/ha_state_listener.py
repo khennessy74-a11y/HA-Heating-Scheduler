@@ -21,7 +21,7 @@ def attach_test_state_listener(
 
     Never register automatically on setup; no action calls are made here.
     """
-    if not entity_id.startswith("switch.") or entity_id == "switch.heating":
+    if not entity_id.startswith("switch.disposable_"):
         raise ValueError("Only a disposable switch test entity is permitted")
 
     pending: set[asyncio.Task] = set()

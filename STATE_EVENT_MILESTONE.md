@@ -15,3 +15,7 @@ to this test helper, so **never attach it outside the test runner**. Before
 connecting a production listener, validate ownership, controller-initiated OFF
 versus manual OFF, restart recovery and error handling against a disposable
 running Home Assistant server.
+
+## Additional disposable-event cases
+
+Testing also covers unavailable/unknown state transitions, ambiguous entry ownership, unrelated switch updates and cancellation of an in-flight callback during cleanup. The explicit test listener now accepts only entity IDs starting with `switch.disposable_`, reducing the chance it could ever be attached to a real heater by mistake. No production listener is registered.
