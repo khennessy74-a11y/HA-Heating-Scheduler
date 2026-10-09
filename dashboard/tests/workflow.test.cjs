@@ -147,3 +147,47 @@ test("edit preview never enables controls even for valid schedule", async () => 
   assert.equal(select.disabled,true);
   assert.equal(buttons().find(b => b.textContent === "Save — unavailable").disabled,true);
 });
+
+test("refresh updates selected schedule and closes invalid delete review", async () => {
+  const card = createCard(path, "heating-scheduler-workflow-preview");
+  let state = "Disabled";
+  card.hass = { callWS: async () => ({response:{read_only:true,items:[
+    {entity_id:"switch.schedule_a",title:"Morning",status:state,
+      can_delete_after_confirmation:state==="Disabled",enabled:state==="Enabled"}
+  ]}})};
+  card.setConfig({entry_id:"disposable_refresh"});
+  await new Promise(resolve=>setImmediate(resolve));
+  const buttons=()=>elements(card.shadowRoot,n=>n.tagName==="button");
+  buttons().find(b=>b.textContent==="Manage Schedules").click();
+  buttons().find(b=>b.textContent==="🗑 Review").click();
+  assert.equal(card._view,"delete_preview");
+  state="Enabled";
+  buttons().find(b=>b.textContent==="Refresh").click();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(card._view,"manage");
+  assert.equal(card._selected.status,"Enabled");
+  assert.equal(buttons().some(b=>b.textContent==="🗑 Review"),false);
+});
+
+test("refresh removes deleted selection from the preview", async () => {
+  const card=createCard(path,"heating-scheduler-workflow-preview");
+  let items=[{entity_id:"switch.schedule_a",title:"Morning",status:"Disabled"}];
+  card.hass={callWS:async()=>({response:{read_only:true,items}})};
+  card.setConfig({entry_id:"disposable_remove"});
+  await new Promise(resolve=>setImmediate(resolve));
+  let buttons=()=>elements(card.shadowRoot,n=>n.tagName==="button");
+  buttons().find(b=>b.textContent==="Morning").click();
+  assert.equal(card._view,"edit");
+  items=[];
+  buttons().find(b=>b.textContent==="Refresh").click();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(card._view,"control");
+  assert.equal(card._selected,null);
+});
+
+test("mobile layout uses wrap and touch-sized controls", () => {
+  const source=fs.readFileSync(path,"utf8");
+  assert.match(source, /@media \(max-width: 420px\)/);
+  assert.match(source, /min-height:44px/);
+  assert.match(source, /flex-wrap:wrap/);
+});

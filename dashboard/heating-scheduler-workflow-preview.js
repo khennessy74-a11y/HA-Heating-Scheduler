@@ -49,6 +49,22 @@ class HeatingSchedulerWorkflowPreview extends HTMLElement {
       if (response?.read_only !== true || !Array.isArray(response.items))
         throw new Error("Read-only schedule response unavailable");
       this._rows = response.items;
+      // After refresh, do not retain a stale editable/deletion preview.
+      if (this._selected) {
+        const current = this._rows.find(item => item.entity_id &&
+          item.entity_id === this._selected.entity_id);
+        if (!current) {
+          this._selected = null;
+          this._view = "control";
+        } else {
+          this._selected = current;
+          if (this._view === "delete_preview" &&
+              !(current.status === "Disabled" &&
+                current.can_delete_after_confirmation === true)) {
+            this._view = "manage";
+          }
+        }
+      }
       this._loaded = true;
     } catch (err) {
       if (request === this._request) this._error = String(err?.message || err);
@@ -78,10 +94,11 @@ class HeatingSchedulerWorkflowPreview extends HTMLElement {
     root.replaceChildren();
     const css = this._node("style");
     css.textContent = `
-      ha-card { padding:16px; }
+      :host { display:block; max-width:100%; min-width:0; }
+      ha-card { padding:16px; box-sizing:border-box; max-width:100%; overflow-wrap:anywhere; }
       .bar,.row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
       .bar { margin-bottom:12px; flex-wrap:wrap; }
-      .row { padding:13px 0; border-top:1px solid var(--divider-color); }
+      .row { padding:13px 0; border-top:1px solid var(--divider-color); min-width:0; }
       .details { flex:1; min-width:0; text-align:left; }
       .name { font-weight:600; overflow-wrap:anywhere; }
       .sub,.muted { color:var(--secondary-text-color); font-size:13px; }
@@ -97,6 +114,14 @@ class HeatingSchedulerWorkflowPreview extends HTMLElement {
       label { display:grid; gap:4px; font-size:14px; }
       input,select { padding:8px; border-radius:8px; border:1px solid var(--divider-color); background:var(--card-background-color); color:var(--primary-text-color); width:100%; box-sizing:border-box; }
       .actions { display:flex; gap:8px; flex-wrap:wrap; }
+      @media (max-width: 420px) {
+        ha-card { padding:12px; }
+        .bar { align-items:stretch; }
+        .row { flex-wrap:wrap; }
+        .details { flex-basis:100%; }
+        .actions > button { flex:1 1 auto; min-height:44px; }
+        fieldset { grid-template-columns:repeat(4, minmax(0,1fr)); }
+      }
       .notice { padding:8px 0; color:var(--secondary-text-color); font-size:13px; }
     `;
     const card = this._node("ha-card");
