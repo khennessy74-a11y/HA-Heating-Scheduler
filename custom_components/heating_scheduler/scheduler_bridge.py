@@ -119,6 +119,60 @@ class SchedulerBridge:
         await self.set_enabled(entity_id, enabled)
         return entity_id
 
+    async def resolve_edited(
+        self, entry_id: str, original_id: str, name: str, before: set[str],
+        *, retries: int = 20,
+        delay: Callable[[float], Awaitable[None]] = asyncio.sleep,
+    ) -> str:
+        """Resolve a renamed schedule without assuming the entity ID is stable.
+
+        Accept only the original entity or a newly created owned entity.
+        An ambiguous outcome is an error, never a guess.
+        """
+        wanted = name.strip().casefold()
+        for _ in range(retries):
+            candidates = [
+                entity_id for entity_id, attrs in self._owned(entry_id).items()
+                if (entity_id == original_id or entity_id not in before)
+                and schedule_name(attrs).casefold() == wanted
+            ]
+            if len(candidates) == 1:
+                return candidates[0]
+            if len(candidates) > 1:
+                raise ScheduleError("Ambiguous renamed schedule; state was not changed")
+            await delay(0.25)
+        raise ScheduleError(
+            "Schedule edit may have succeeded, but its entity could not be "
+            "identified safely. Check Scheduler before retrying."
+        )
+
+    async def edit(
+        self, *, entry_id: str, entity_id: str, name: str, start: str,
+        weekdays: list[str], minutes: int, enabled: bool,
+    ) -> str:
+        """Edit an owned schedule; apply state only to its verified identity."""
+        validate_schedule(name, start, weekdays, minutes)
+        owned = self._owned(entry_id)
+        if entity_id not in owned:
+            raise ScheduleError("Cannot edit an unowned schedule")
+        self._reject_duplicate(entry_id, name, ignore=entity_id)
+        before = set(owned)
+        original_name = schedule_name(owned[entity_id])
+        payload: dict[str, Any] = {
+            "entity_id": entity_id,
+            "weekdays": weekdays,
+            "timeslots": [{
+                "start": start,
+                "actions": [schedule_action(entry_id, minutes)],
+            }],
+        }
+        if name.strip() != original_name:
+            payload["name"] = name.strip()
+        await self._call("scheduler", "edit", payload)
+        resolved = await self.resolve_edited(entry_id, entity_id, name, before)
+        await self.set_enabled(resolved, enabled)
+        return resolved
+
     async def remove(self, *, entry_id: str, entity_id: str) -> None:
         attrs = self._owned(entry_id).get(entity_id)
         if attrs is None:
