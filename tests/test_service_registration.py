@@ -19,7 +19,7 @@ core = types.ModuleType("homeassistant.core")
 core.HomeAssistant = type("HomeAssistant", (), {})
 core.ServiceCall = type("ServiceCall", (), {})
 exceptions = types.ModuleType("homeassistant.exceptions")
-exceptions.HomeAssistantError = type("HomeAssistantError", (Exception,), {})
+exceptions.ServiceValidationError = type("ServiceValidationError", (Exception,), {})
 sys.modules.update({
     "homeassistant": ha,
     "homeassistant.core": core,
@@ -70,7 +70,7 @@ class RegistrationTests(unittest.IsolatedAsyncioTestCase):
         })
         self.assertFalse(registration.schedule_writes_allowed(hass, "entry_a"))
         for name, (handler, _) in hass.services.handlers.items():
-            with self.subTest(name=name), self.assertRaises(exceptions.HomeAssistantError):
+            with self.subTest(name=name), self.assertRaises(exceptions.ServiceValidationError):
                 await handler(types.SimpleNamespace(
                     service=name, data={"entry_id": "entry_a"},
                 ))
