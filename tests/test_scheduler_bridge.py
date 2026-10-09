@@ -196,5 +196,97 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
 
 
 
+    async def test_duplicate_add_does_not_call_scheduler(self):
+        schedules = {
+            "switch.schedule_morning": {
+                "friendly_name": "Scheduler Morning",
+                "actions": [bridge.schedule_action("a", 15)],
+            }
+        }
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service, data))
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        with self.assertRaisesRegex(bridge.ScheduleError, "Duplicate"):
+            await b.add(
+                entry_id="a", name="morning", start="06:30",
+                weekdays=["mon"], minutes=15,
+            )
+        self.assertEqual(calls, [])
+
+    async def test_ambiguous_new_schedule_does_not_toggle_either(self):
+        schedules = {}
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service, data))
+            if (domain, service) == ("scheduler", "add"):
+                for suffix in ("one", "two"):
+                    schedules[f"switch.schedule_{suffix}"] = {
+                        "friendly_name": "Scheduler Morning",
+                        "actions": [bridge.schedule_action("a", 15)],
+                    }
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        with self.assertRaisesRegex(bridge.ScheduleError, "Ambiguous"):
+            await b.add(
+                entry_id="a", name="Morning", start="06:30",
+                weekdays=["mon"], minutes=15, enabled=False,
+            )
+        self.assertEqual([(d, s) for d, s, _ in calls], [("scheduler", "add")])
+
+    async def test_unresolved_add_does_not_change_existing_schedule(self):
+        schedules = {
+            "switch.schedule_existing": {
+                "friendly_name": "Scheduler Existing",
+                "actions": [bridge.schedule_action("a", 15)],
+            }
+        }
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service, data))
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        with self.assertRaisesRegex(bridge.ScheduleError, "cannot be identified"):
+            await b.add(
+                entry_id="a", name="Morning", start="06:30",
+                weekdays=["mon"], minutes=15, enabled=False,
+            )
+        self.assertEqual([(d, s) for d, s, _ in calls], [("scheduler", "add")])
+
+    async def test_rename_ambiguous_never_toggles_another_schedule(self):
+        schedules = {
+            "switch.schedule_original": {
+                "friendly_name": "Scheduler Original",
+                "actions": [bridge.schedule_action("a", 15)],
+            }
+        }
+        calls = []
+
+        async def call(domain, service, data):
+            calls.append((domain, service, data))
+            if (domain, service) == ("scheduler", "edit"):
+                schedules["switch.schedule_first"] = {
+                    "friendly_name": "Scheduler Renamed",
+                    "actions": [bridge.schedule_action("a", 15)],
+                }
+                schedules["switch.schedule_second"] = {
+                    "friendly_name": "Scheduler Renamed",
+                    "actions": [bridge.schedule_action("a", 15)],
+                }
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        with self.assertRaisesRegex(bridge.ScheduleError, "Ambiguous"):
+            await b.edit(
+                entry_id="a", entity_id="switch.schedule_original",
+                name="Renamed", start="06:30", weekdays=["mon"],
+                minutes=15, enabled=False,
+            )
+        self.assertEqual([(d, s) for d, s, _ in calls], [("scheduler", "edit")])
+
+
 if __name__ == "__main__":
     unittest.main()
