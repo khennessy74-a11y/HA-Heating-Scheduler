@@ -106,5 +106,58 @@ jobs:
               assert schema is not None
               print("Schema available:", name)
 
+          from custom_components.heating_scheduler.service_registration import (
+              schedule_writes_allowed,
+              async_register_schedule_services,
+          )
+          from homeassistant.exceptions import ServiceValidationError
+          from types import SimpleNamespace
+          from unittest.mock import AsyncMock
+
+          class InMemoryServices:
+              def __init__(self):
+                  self.handlers = {}
+                  self.calls = AsyncMock()
+
+              def async_register(self, domain, name, handler, schema=None):
+                  self.handlers[(domain, name)] = (handler, schema)
+
+          class InMemoryHA:
+              def __init__(self):
+                  self.data = {"heating_scheduler": {"test_entry": {"target_entity": "switch.test_only"}}}
+                  self.services = InMemoryServices()
+                  self.entry = SimpleNamespace(domain="heating_scheduler", options={})
+                  self.config_entries = SimpleNamespace(
+                      async_get_entry=lambda key: self.entry if key == "test_entry" else None,
+                  )
+
+          hass = InMemoryHA()
+          async_register_schedule_services(hass)
+          async_register_schedule_services(hass)
+          assert len(hass.services.handlers) == 3
+          assert not schedule_writes_allowed(hass, "test_entry")
+
+          valid_add = {
+              "entry_id": "test_entry", "name": "Morning", "start": "06:30",
+              "weekdays": ["mon", "tue"], "minutes": 60, "enabled": True,
+          }
+          assert _SCHEMAS["add_schedule"](valid_add) == valid_add
+          for name, payload in (
+              ("add_schedule", valid_add),
+              ("edit_schedule", {**valid_add, "entity_id": "switch.schedule_test"}),
+              ("remove_schedule", {"entry_id": "test_entry", "entity_id": "switch.schedule_test"}),
+          ):
+              handler, schema = hass.services.handlers[("heating_scheduler", name)]
+              validated = schema(payload)
+              try:
+                  import asyncio
+                  asyncio.run(handler(SimpleNamespace(service=name, data=validated)))
+              except ServiceValidationError:
+                  pass
+              else:
+                  raise AssertionError(f"{name} unexpectedly allowed a write")
+              print("Rejected disabled write:", name)
+
+          print("PASS: 3 real-library service schemas and default-deny dispatch checks")
           print("PASS: no Home Assistant server or hardware was started")
           PY
