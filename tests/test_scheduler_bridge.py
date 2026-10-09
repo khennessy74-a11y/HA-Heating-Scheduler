@@ -288,5 +288,38 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([(d, s) for d, s, _ in calls], [("scheduler", "edit")])
 
 
+    async def test_simultaneous_add_same_name_only_creates_one(self):
+        schedules = {}
+        calls = []
+        entered = asyncio.Event()
+        release = asyncio.Event()
+
+        async def call(domain, service, data):
+            calls.append((domain, service, data))
+            if (domain, service) == ("scheduler", "add"):
+                entered.set()
+                await release.wait()
+                schedules["switch.schedule_morning"] = {
+                    "friendly_name": "Scheduler Morning", "state": "on",
+                    "actions": [bridge.schedule_action("a", 15)],
+                }
+
+        b = bridge.SchedulerBridge(call, lambda: schedules)
+        kwargs = dict(
+            entry_id="a", name="Morning", start="06:30",
+            weekdays=["mon"], minutes=15, enabled=True,
+        )
+        first = asyncio.create_task(b.add(**kwargs))
+        await asyncio.wait_for(entered.wait(), timeout=1)
+        second = asyncio.create_task(b.add(**kwargs))
+        await asyncio.sleep(0)
+        release.set()
+        created = await first
+        self.assertEqual(created, "switch.schedule_morning")
+        with self.assertRaisesRegex(bridge.ScheduleError, "Duplicate"):
+            await second
+        self.assertEqual(sum((d, s) == ("scheduler", "add") for d, s, _ in calls), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
