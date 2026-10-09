@@ -18,7 +18,8 @@
 
 ## Mobile dashboard
 - [x] Add a non-interactive mobile Lovelace preview and static safety tests
-- [ ] Define integration-native schedule list data and UI state contract
+- [x] Define read-only owned schedule list data with unknown-safe UI state fields
+- [ ] Verify structured Scheduler Component timing source before enabling an edit form
 - [ ] One-column Heating Control schedule rows
 - [ ] Tap row to load Add/Edit (not enable/disable)
 - [ ] Enable/disable control inside edit
