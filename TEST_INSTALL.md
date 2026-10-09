@@ -14,6 +14,19 @@
 - Do not configure any heating automation to call `heating_scheduler.*` actions yet.
 - This repository contains the GitHub-first custom integration. HACS is **not required** to install it, but Scheduler Component is a separate dependency.
 
+## Dashboard prerequisites (for a later UI test)
+
+Backend-only setup does **not** require custom Lovelace cards. When the dashboard is ready, install the frontend dependencies it uses:
+
+- Bubble Card (popups)
+- Mushroom Cards (dashboard controls)
+- Auto-Entities (dynamic lists)
+- Button Card (schedule rows)
+- Card Mod (styling)
+- Custom text-input card used by the final form (name and repository to be verified)
+
+Scheduler Component is a **backend** dependency, not a Lovelace card. The existing YAML dashboard is not yet portable to this integration; defer dashboard installation until its full configuration and dependencies are verified.
+
 ## 2. Manual installation
 
 1. Open GitHub repository **Code → Download ZIP**, and extract it locally.
