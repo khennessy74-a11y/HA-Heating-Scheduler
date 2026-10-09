@@ -48,3 +48,6 @@ jobs:
                   counts['json'] += 1
           print('Validation passed:', counts)
           PY
+
+      - name: Run isolated session-policy tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
