@@ -1,9 +1,18 @@
-"""Unit tests for the inert heating session policy."""
+"""Unit tests for the isolated session policy without Home Assistant installed."""
+import importlib.util
+from pathlib import Path
+import sys
 import unittest
 
-from custom_components.heating_scheduler.session import (
-    SessionDecision, evaluate_start, make_request,
-)
+MODULE_PATH = Path(__file__).resolve().parents[1] / "custom_components" / "heating_scheduler" / "session.py"
+spec = importlib.util.spec_from_file_location("heating_scheduler_session_policy", MODULE_PATH)
+module = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = module
+spec.loader.exec_module(module)
+
+SessionDecision = module.SessionDecision
+evaluate_start = module.evaluate_start
+make_request = module.make_request
 
 
 class SessionPolicyTests(unittest.TestCase):
