@@ -1,0 +1,412 @@
+type: custom:bubble-card
+card_type: pop-up
+hash: '#addheat'
+name: Heating Schedule
+icon: mdi:calendar-plus
+popup_mode: centered
+width_desktop: 500px
+full_width_on_mobile: false
+scrolling_effect: false
+cards:
+  - type: custom:mushroom-legacy-template-card
+    primary: |-
+      {% if states('input_text.heating_edit_selected')
+            .startswith('switch.schedule_') %}
+        Edit Heating Schedule
+      {% else %}
+        Add Heating Schedule
+      {% endif %}
+    secondary: |-
+      {% if states('input_text.heating_edit_selected')
+            .startswith('switch.schedule_') %}
+        Update an existing heating schedule
+      {% else %}
+        Create a new heating schedule
+      {% endif %}
+    icon: |-
+      {% if states('input_text.heating_edit_selected')
+            .startswith('switch.schedule_') %}
+        mdi:calendar-edit
+      {% else %}
+        mdi:calendar-plus
+      {% endif %}
+    icon_color: primary
+    layout: horizontal
+    tap_action:
+      action: none
+  - type: custom:super-text-input
+    entity: input_text.heating_schedule_name
+    label: Schedule name
+    placeholder: e.g. Morning Heating
+    update_mode: realtime
+    debounce_time: 300
+  - type: entities
+    show_header_toggle: false
+    entities:
+      - entity: input_datetime.heating_new_on_time
+        name: Turn heating on at
+        icon: mdi:clock-start
+      - entity: input_select.heating_duration_choice
+        name: Heating duration
+        icon: mdi:timer-outline
+  - type: custom:bubble-card
+    card_type: separator
+    name: Repeat on
+    icon: mdi:calendar-week
+  - type: grid
+    columns: 7
+    square: false
+    cards:
+      - type: button
+        entity: input_boolean.heating_day_mon
+        name: M
+        show_icon: false
+        tap_action:
+          action: toggle
+        card_mod:
+          style: |
+            ha-card {
+              width: 42px;
+              height: 42px;
+              border-radius: 50%;
+              padding: 0;
+              margin: auto;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 600;
+              {% if is_state(config.entity, 'on') %}
+                background: var(--primary-color);
+                color: var(--text-primary-color);
+              {% else %}
+                background: var(--card-background-color);
+                color: var(--primary-text-color);
+              {% endif %}
+            }
+      - type: button
+        entity: input_boolean.heating_day_tue
+        name: T
+        show_icon: false
+        tap_action:
+          action: toggle
+        card_mod:
+          style: |
+            ha-card {
+              width: 42px;
+              height: 42px;
+              border-radius: 50%;
+              padding: 0;
+              margin: auto;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 600;
+              {% if is_state(config.entity, 'on') %}
+                background: var(--primary-color);
+                color: var(--text-primary-color);
+              {% else %}
+                background: var(--card-background-color);
+                color: var(--primary-text-color);
+              {% endif %}
+            }
+      - type: button
+        entity: input_boolean.heating_day_wed
+        name: W
+        show_icon: false
+        tap_action:
+          action: toggle
+        card_mod:
+          style: |
+            ha-card {
+              width: 42px;
+              height: 42px;
+              border-radius: 50%;
+              padding: 0;
+              margin: auto;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 600;
+              {% if is_state(config.entity, 'on') %}
+                background: var(--primary-color);
+                color: var(--text-primary-color);
+              {% else %}
+                background: var(--card-background-color);
+                color: var(--primary-text-color);
+              {% endif %}
+            }
+      - type: button
+        entity: input_boolean.heating_day_thu
+        name: T
+        show_icon: false
+        tap_action:
+          action: toggle
+        card_mod:
+          style: |
+            ha-card {
+              width: 42px;
+              height: 42px;
+              border-radius: 50%;
+              padding: 0;
+              margin: auto;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 600;
+              {% if is_state(config.entity, 'on') %}
+                background: var(--primary-color);
+                color: var(--text-primary-color);
+              {% else %}
+                background: var(--card-background-color);
+                color: var(--primary-text-color);
+              {% endif %}
+            }
+      - type: button
+        entity: input_boolean.heating_day_fri
+        name: F
+        show_icon: false
+        tap_action:
+          action: toggle
+        card_mod:
+          style: |
+            ha-card {
+              width: 42px;
+              height: 42px;
+              border-radius: 50%;
+              padding: 0;
+              margin: auto;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 600;
+              {% if is_state(config.entity, 'on') %}
+                background: var(--primary-color);
+                color: var(--text-primary-color);
+              {% else %}
+                background: var(--card-background-color);
+                color: var(--primary-text-color);
+              {% endif %}
+            }
+      - type: button
+        entity: input_boolean.heating_day_sat
+        name: S
+        show_icon: false
+        tap_action:
+          action: toggle
+        card_mod:
+          style: |
+            ha-card {
+              width: 42px;
+              height: 42px;
+              border-radius: 50%;
+              padding: 0;
+              margin: auto;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 600;
+              {% if is_state(config.entity, 'on') %}
+                background: var(--primary-color);
+                color: var(--text-primary-color);
+              {% else %}
+                background: var(--card-background-color);
+                color: var(--primary-text-color);
+              {% endif %}
+            }
+      - type: button
+        entity: input_boolean.heating_day_sun
+        name: S
+        show_icon: false
+        tap_action:
+          action: toggle
+        card_mod:
+          style: |
+            ha-card {
+              width: 42px;
+              height: 42px;
+              border-radius: 50%;
+              padding: 0;
+              margin: auto;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 600;
+              {% if is_state(config.entity, 'on') %}
+                background: var(--primary-color);
+                color: var(--text-primary-color);
+              {% else %}
+                background: var(--card-background-color);
+                color: var(--primary-text-color);
+              {% endif %}
+            }
+  - type: conditional
+    conditions:
+      - condition: state
+        entity: input_select.heating_save_status
+        state: duplicate
+    card:
+      type: custom:mushroom-legacy-template-card
+      primary: Schedule already exists
+      secondary: Please choose another name.
+      icon: mdi:alert-circle-outline
+      icon_color: primary
+      layout: horizontal
+      tap_action:
+        action: none
+  - type: conditional
+    conditions:
+      - condition: state
+        entity: input_select.heating_save_status
+        state: invalid
+    card:
+      type: custom:mushroom-legacy-template-card
+      primary: Please check your schedule
+      secondary: Enter a name and select a weekday.
+      icon: mdi:alert-circle-outline
+      icon_color: primary
+      layout: horizontal
+      tap_action:
+        action: none
+  - type: horizontal-stack
+    cards:
+      - type: custom:button-card
+        name: Cancel
+        icon: mdi:close
+        show_icon: true
+        show_name: true
+        tap_action:
+          action: multi-actions
+          actions:
+            - action: perform-action
+              perform_action: script.turn_on
+              target:
+                entity_id: script.heating_cancel_schedule
+            - wait_completion: |
+                [[[
+                  return states[
+                    'script.heating_cancel_schedule'
+                  ]?.state === 'off';
+                ]]]
+              timeout: 5s
+            - action: navigate
+              navigation_path: '#heatpop'
+        styles:
+          card:
+            - height: 56px
+            - border-radius: var(--ha-card-border-radius)
+            - background: var(--card-background-color)
+            - box-shadow: none
+          grid:
+            - grid-template-areas: '"i n"'
+            - grid-template-columns: 24px 1fr
+            - align-items: center
+          icon:
+            - width: 22px
+            - color: var(--secondary-text-color)
+          name:
+            - font-size: 14px
+            - justify-self: start
+            - color: var(--primary-text-color)
+      - type: custom:button-card
+        entity: input_select.heating_save_status
+        name: |
+          [[[
+            const selected =
+              states['input_text.heating_edit_selected']?.state || '';
+
+            return selected.startsWith('switch.schedule_')
+              ? 'Save Changes'
+              : 'Save Schedule';
+          ]]]
+        tap_action: |
+          [[[
+            const valid =
+              states['binary_sensor.heating_schedule_form_valid']?.state === 'on';
+
+            if (!valid) {
+              return { action: 'none' };
+            }
+
+            const selected =
+              states['input_text.heating_edit_selected']?.state || '';
+
+            const editing = selected.startsWith('switch.schedule_');
+
+            const saveScript = editing
+              ? 'script.heating_update_schedule'
+              : 'script.heating_create_schedule';
+
+            return {
+              action: 'multi-actions',
+              actions: [
+                {
+                  action: 'perform-action',
+                  perform_action: 'input_select.select_option',
+                  target: {
+                    entity_id: 'input_select.heating_save_status'
+                  },
+                  data: {
+                    option: 'idle'
+                  }
+                },
+                {
+                  action: 'perform-action',
+                  perform_action: 'script.turn_on',
+                  target: {
+                    entity_id: saveScript
+                  }
+                },
+                {
+                  wait_completion: `[[[
+                    const status =
+                      states['input_select.heating_save_status']?.state;
+
+                    return ['saved', 'duplicate', 'invalid'].includes(status);
+                  ]]]`,
+                  timeout: '15s'
+                },
+                {
+                  action: 'javascript',
+                  javascript: `[[[
+                    if (
+                      states['input_select.heating_save_status']?.state === 'saved'
+                    ) {
+                      helpers.runAction({
+                        action: 'navigate',
+                        navigation_path: '#heatpop'
+                      });
+                    }
+                  ]]]`
+                }
+              ]
+            };
+          ]]]
+        # No separate icon_tap_action: icon and label share the
+        # same Add/Edit-aware tap_action above.
+        styles:
+          card:
+            - height: 56px
+            - border-radius: var(--ha-card-border-radius)
+            - background: var(--card-background-color)
+            - box-shadow: none
+            - opacity: |
+                [[[
+                  return states[
+                    'binary_sensor.heating_schedule_form_valid'
+                  ]?.state === 'on' ? '1' : '0.4';
+                ]]]
+          grid:
+            - grid-template-areas: '"i n"'
+            - grid-template-columns: 32px 1fr
+            - align-items: center
+          icon:
+            - width: 22px
+            - color: var(--primary-color)
+          name:
+            - font-size: 14px
+            - justify-self: start
+            - color: var(--primary-text-color)
+button_type: name
+close_action:
+  action: navigate
+  navigation_path: '#heatpop'
