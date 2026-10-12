@@ -1,8 +1,8 @@
-# Heating Scheduler — portable backend candidate
+# Heating Scheduler — complete portable YAML candidate
 
 **Status:** YAML syntax checked. Not yet tested on a second running Home Assistant instance. **Do not deploy to a live heater without independent safety controls and a test run.**
 
-This bundle contains the portable reference backend configuration. The three pop-ups are being staged separately on the GitHub simplification branch, and should be imported together after review. This ZIP is a **backend candidate**, not a complete HACS-installable integration.
+This bundle includes the backend package and **three** dashboard pop-ups (`heating-control.yaml`, `add-edit-schedule.yaml`, `manage-schedules.yaml`). Import all three as cards in the same Lovelace view, preferably at the end of that view. This is a **portable YAML candidate**, not a HACS-installable integration. It still requires a disposable Home Assistant test.
 
 ## Requirements
 - Home Assistant supporting packages, scripts, timers, and recent automation YAML syntax.
@@ -23,7 +23,7 @@ This bundle contains the portable reference backend configuration. The three pop
    Merge that stanza into your **existing** `homeassistant:` section; do not duplicate a top-level section.
 6. Check Home Assistant YAML configuration before restarting. Reload scripts, automations and template entities if available, or restart once.
 7. Verify that all six `script.heating_*` entities and `binary_sensor.heating_schedule_form_valid` exist.
-8. After importing the three dashboard pop-ups, test Add, Edit, Rename, Cancel, disabled-only Delete, enabled state, and mobile layout on disposable schedules.
+8. In Dashboard Edit mode, import each YAML file from `dashboard/` as one manual card in the **same dashboard view**, in the order Heating Control, Add/Edit, Manage. Keep their hash values (`#heatpop`, `#addheat`, `#manageheat`) unchanged. Add an ordinary dashboard button that navigates to `#heatpop`. Verify the popup dependencies have loaded before testing. Then test Add, Edit, Rename, Cancel, disabled-only Delete, enabled state and mobile layout on disposable schedules.
 9. Test timer expiration and switch OFF, manual OFF, failed switch-ON confirmation, restart behaviour and schedule trigger using a **safe test load**, never a heater first.
 
 ## Why this isn't auto-installed through HACS
@@ -34,3 +34,8 @@ Disable the schedule(s) created for testing, remove the new dashboard cards, rem
 
 ## Frontend dependencies for existing pop-ups
 Bubble Card, Mushroom, Auto-Entities, Button Card, Super Text Input, Card Mod, and Layout Card (for responsive Manage pop-up). Verify installed versions and exact custom-card resource names.
+## Known limits and release gate
+- The dynamic `switch.schedule_*` filter can include unrelated Scheduler schedules in a shared HA instance. **Do not use deletion or editing controls on unrelated schedules.** A heating-only filtering mechanism is needed before general release.
+- `#manageheat` uses `layout-card`; ensure its Lovelace resource is installed.
+- The card structure and generated ZIP are CI-validated for YAML parsing, **not browser- or Home Assistant-runtime tested**. The iPhone layout and nested Button Card actions still require manual verification.
+- Never activate this package and the experimental Python integration against the same physical outlet simultaneously.
