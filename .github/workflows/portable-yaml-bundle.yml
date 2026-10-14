@@ -69,3 +69,26 @@ jobs:
           path: dist/*.zip
           if-no-files-found: error
           retention-days: 14
+
+  mobile-browser:
+    name: Portable iPhone-width Chromium grid checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prepare YAML-derived layout fixture
+        run: |
+          python -m pip install PyYAML==6.0.2
+          python portable/tests/export_mobile_fixture.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install browser
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Check mobile layout in Chromium
+        run: node --test portable/tests/mobile_browser.test.cjs
