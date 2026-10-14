@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install YAML parser
-        run: python -m pip install PyYAML==6.0.2
+        run: python -m pip install PyYAML==6.0.2 Jinja2==3.1.6
       - name: Validate portable YAML and linkages
         run: |
           python - <<'PY'
