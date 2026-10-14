@@ -44,6 +44,8 @@ jobs:
           print("PASS: four YAML files parse; required scripts, automations, and pop-up hashes present.")
           print("NOTE: HA runtime, Scheduler service schema and iPhone layout are NOT verified by this job.")
           PY
+      - name: Run portable structural regression tests
+        run: python -m unittest discover -s portable/tests -p 'test_*.py' -v
       - name: Assemble ZIP
         run: |
           mkdir -p dist
