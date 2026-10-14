@@ -96,7 +96,7 @@ class PortableContractTests(unittest.TestCase):
             areas = styles["grid"][0]["grid-template-areas"]
             self.assertIn('"l l"', areas)
             self.assertIn(f'". {field}"', areas)
-            self.assertIn(f"grid-area: {field}", str(styles["custom_fields"][field]))
+            self.assertIn({"grid-area": field}, styles["custom_fields"][field])
         manage_card = next(x for x in self.manage["cards"] if x["type"] == "custom:auto-entities")
         self.assertEqual(manage_card["card"]["layout"]["mediaquery"]["(max-width: 600px)"]
                          ["grid-template-columns"], "1fr")
