@@ -16,6 +16,8 @@ for name, field in (("heating-control","delete"),("manage-schedules","edit")):
         "rows":prop("grid","grid-template-rows"),
         "gap":prop("grid","row-gap"),
         "min_height":prop("card","min-height"),
-        "field_area":prop("custom_fields","nonexistent") if False else field
+        "field_area":next(x["grid-area"] for x in st["custom_fields"][field] if "grid-area" in x),
+        "button": a["filter"]["include"][0]["options"]["custom_fields"][field]["card"]["icon"],
+        "mobile_columns": a["card"].get("layout",{}).get("mediaquery",{}).get("(max-width: 600px)",{}).get("grid-template-columns")
     }
 (root/"tests"/"portable-layout.json").write_text(json.dumps(result))
