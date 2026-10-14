@@ -27,7 +27,7 @@ class FakeHeating:
         self.confirms_on = confirms_on
         self.calls = []
         self.env = jinja2.Environment()
-        self.env.filters["int"] = lambda value, default=0: int(value or default)
+        # Jinja2 built-in int(default) safely handles nonnumeric input.
         self.env.globals.update(
             is_state=self.is_state,
             states=self.states,
