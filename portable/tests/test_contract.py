@@ -109,6 +109,16 @@ class PortableContractTests(unittest.TestCase):
         self.assertIn("heating_update_schedule", save["tap_action"])
         self.assertIn("heating_create_schedule", save["tap_action"])
 
+    def test_schedule_lists_include_only_heating_script(self):
+        # Auto-Entities $ stringifies the Scheduler entities list before wildcard matching.
+        for popup in (self.heat, self.manage):
+            auto = next(x for x in popup["cards"] if x["type"] == "custom:auto-entities")
+            entries = auto["filter"]["include"]
+            self.assertEqual(len(entries), 1)
+            self.assertEqual(entries[0]["entity_id"], "switch.schedule_*")
+            self.assertEqual(entries[0]["attributes"]["entities"],
+                             "$*script.heating_scheduled_run*")
+
     def test_no_duplicated_timer_helper_in_package(self):
         self.assertNotIn("timer", self.backend)
 
