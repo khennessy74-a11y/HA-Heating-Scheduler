@@ -1,0 +1,487 @@
+# Heating Scheduler portable YAML package
+# Reference implementation for Scheduler Component.
+# Requires a real switch.heating and timer.heating_display_timer.
+# Do NOT load concurrently with another Heating Scheduler controlling the same outlet.
+input_text:
+  heating_schedule_name:
+    name: Schedule Name
+    initial: ""
+    max: 80
+  heating_edit_selected:
+    name: Heating Schedule Selected for Editing
+    initial: ""
+    max: 255
+  heating_delete_selected:
+    name: Heating Schedule Selected for Deletion
+    initial: ""
+    max: 255
+input_datetime:
+  heating_new_on_time:
+    name: Turn heating on at
+    has_date: false
+    has_time: true
+    initial: "05:30:00"
+input_select:
+  heating_duration_choice:
+    name: How long should the heating be on for?
+    icon: mdi:timer-outline
+    options:
+      - 15 minutes
+      - 30 minutes
+      - 45 minutes
+      - 1 hour
+      - 1 hour 30 minutes
+      - 2 hours
+      - 3 hours
+      - 4 hours
+    initial: 1 hour
+  heating_save_status:
+    name: Heating Schedule Save Status
+    options: [idle, saving, saved, duplicate, invalid]
+    initial: idle
+input_boolean:
+  heating_day_mon:
+    name: Monday
+  heating_day_tue:
+    name: Tuesday
+  heating_day_wed:
+    name: Wednesday
+  heating_day_thu:
+    name: Thursday
+  heating_day_fri:
+    name: Friday
+  heating_day_sat:
+    name: Saturday
+  heating_day_sun:
+    name: Sunday
+script:
+  # Scheduler fires script.turn_on with variables.minutes.
+  # Do not start a second session or start the timer without switch confirmation.
+  heating_scheduled_run:
+    alias: Heating - Run Scheduled Session
+    mode: single
+    max_exceeded: warning
+    sequence:
+      - condition: template
+        value_template: >-
+          {{ is_state('timer.heating_display_timer', 'idle')
+             and is_state('switch.heating', 'off') }}
+      - variables:
+          session_minutes: "{{ minutes | default(0) | int(0) }}"
+      - condition: template
+        value_template: "{{ 0 < (session_minutes | int(0)) <= 240 }}"
+      - action: switch.turn_on
+        target:
+          entity_id: switch.heating
+      - wait_template: "{{ is_state('switch.heating', 'on') }}"
+        timeout: "00:00:10"
+        continue_on_timeout: true
+      - if:
+          - condition: template
+            value_template: "{{ not wait.completed }}"
+        then:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.heating
+          - stop: Heating did not confirm ON within 10 seconds
+      - action: timer.start
+        target:
+          entity_id: timer.heating_display_timer
+        data:
+          duration: >-
+            {{ '%02d:%02d:00' | format(
+                 (session_minutes | int(0)) // 60,
+                 (session_minutes | int(0)) % 60) }}
+
+  # Reset shared form; crucially exits Edit mode after Save or Cancel.
+  heating_cancel_schedule:
+    alias: Heating - Cancel New Schedule
+    mode: single
+    sequence:
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.heating_schedule_name
+        data:
+          value: ""
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.heating_new_on_time
+        data:
+          time: "05:30:00"
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.heating_duration_choice
+        data:
+          option: 1 hour
+      - repeat:
+          for_each:
+            - input_boolean.heating_day_mon
+            - input_boolean.heating_day_tue
+            - input_boolean.heating_day_wed
+            - input_boolean.heating_day_thu
+            - input_boolean.heating_day_fri
+            - input_boolean.heating_day_sat
+            - input_boolean.heating_day_sun
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id: "{{ repeat.item }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.heating_edit_selected
+        data:
+          value: ""
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.heating_save_status
+        data:
+          option: idle
+
+  # Read Scheduler's exposed attributes back into the shared editor.
+  heating_load_schedule_for_edit:
+    alias: Heating - Load Schedule for Editing
+    mode: single
+    sequence:
+      - variables:
+          selected_schedule: "{{ states('input_text.heating_edit_selected') | trim }}"
+      - condition: template
+        value_template: >-
+          {{ selected_schedule.startswith('switch.schedule_')
+             and selected_schedule in (states.switch | map(attribute='entity_id') | list)
+             and 'script.heating_scheduled_run' in (state_attr(selected_schedule, 'entities') or []) }}
+      - variables:
+          schedule_name: >-
+            {{ (state_attr(selected_schedule, 'friendly_name') or selected_schedule)
+               | regex_replace('^Scheduler\s+', '', ignorecase=True) | trim }}
+          start_time: "{{ (state_attr(selected_schedule, 'timeslots') or ['05:30'])[0] }}"
+          chosen_days: "{{ state_attr(selected_schedule, 'weekdays') or [] }}"
+          duration_minutes: >-
+            {% set ns = namespace(minutes=0) %}
+            {% for a in state_attr(selected_schedule, 'actions') or [] %}
+              {% if a.get('service') == 'script.turn_on' %}
+                {% set ns.minutes = a.get('data', {}).get('variables', {}).get('minutes', 0) | int(0) %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.minutes }}
+      - variables:
+          duration_option: >-
+            {% set options = {15:'15 minutes',30:'30 minutes',45:'45 minutes',60:'1 hour',
+             90:'1 hour 30 minutes',120:'2 hours',180:'3 hours',240:'4 hours'} %}
+            {{ options.get(duration_minutes | int(0), '') }}
+      - condition: template
+        value_template: "{{ duration_option | trim | length > 0 and start_time | trim | length >= 5 }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.heating_schedule_name
+        data:
+          value: "{{ schedule_name }}"
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.heating_new_on_time
+        data:
+          time: "{{ start_time[:5] }}:00"
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.heating_duration_choice
+        data:
+          option: "{{ duration_option }}"
+      - repeat:
+          for_each: [mon, tue, wed, thu, fri, sat, sun]
+          sequence:
+            - if:
+                - condition: template
+                  value_template: "{{ repeat.item in chosen_days }}"
+              then:
+                - action: input_boolean.turn_on
+                  target:
+                    entity_id: "{{ 'input_boolean.heating_day_' ~ repeat.item }}"
+              else:
+                - action: input_boolean.turn_off
+                  target:
+                    entity_id: "{{ 'input_boolean.heating_day_' ~ repeat.item }}"
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.heating_save_status
+        data:
+          option: idle
+
+  # ADD ONLY: never accidentally create a new entity during Edit mode.
+  heating_create_schedule:
+    alias: Heating - Save New Schedule
+    mode: single
+    max_exceeded: warning
+    sequence:
+      - condition: template
+        value_template: "{{ states('input_text.heating_edit_selected') | trim == '' }}"
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.heating_save_status
+        data:
+          option: saving
+      - variables:
+          schedule_name: "{{ states('input_text.heating_schedule_name') | trim }}"
+          start_time: "{{ states('input_datetime.heating_new_on_time')[:5] }}"
+          duration_minutes: >-
+            {% set choices = {'15 minutes':15,'30 minutes':30,'45 minutes':45,'1 hour':60,
+              '1 hour 30 minutes':90,'2 hours':120,'3 hours':180,'4 hours':240} %}
+            {{ choices.get(states('input_select.heating_duration_choice'), 0) }}
+          chosen_days: >-
+            {% set ns = namespace(days=[]) %}
+            {% for day in ['mon','tue','wed','thu','fri','sat','sun'] %}
+              {% if is_state('input_boolean.heating_day_' ~ day, 'on') %}
+                {% set ns.days = ns.days + [day] %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.days }}
+      - if:
+          - condition: template
+            value_template: >-
+              {{ schedule_name | lower in ['', 'new heating schedule']
+                 or not (5 <= (duration_minutes | int(0)) <= 240)
+                 or (chosen_days | count) == 0 or (start_time | length) != 5 }}
+        then:
+          - action: input_select.select_option
+            target:
+              entity_id: input_select.heating_save_status
+            data:
+              option: invalid
+          - stop: Invalid heating schedule
+      - variables:
+          schedule_exists: >-
+            {% set ns = namespace(found=false) %}
+            {% set wanted = schedule_name | lower | trim %}
+            {% for item in states.switch %}
+              {% if item.entity_id.startswith('switch.schedule_') %}
+                {% set existing = item.name | lower | trim %}
+                {% if existing == wanted or existing == 'scheduler ' ~ wanted %}
+                  {% set ns.found = true %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.found }}
+      - if:
+          - condition: template
+            value_template: "{{ schedule_exists | bool(false) }}"
+        then:
+          - action: input_select.select_option
+            target:
+              entity_id: input_select.heating_save_status
+            data:
+              option: duplicate
+          - stop: Duplicate heating schedule prevented
+      - action: scheduler.add
+        data:
+          name: "{{ schedule_name }}"
+          weekdays: "{{ chosen_days }}"
+          repeat_type: repeat
+          timeslots:
+            - start: "{{ start_time }}"
+              actions:
+                - service: script.turn_on
+                  entity_id: script.heating_scheduled_run
+                  service_data:
+                    variables:
+                      minutes: "{{ duration_minutes | int(0) }}"
+      - action: script.heating_cancel_schedule
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.heating_save_status
+        data:
+          option: saved
+
+  # Deletion requires explicit selected entity and schedule OFF.
+  heating_delete_schedule:
+    alias: Heating - Delete Selected Schedule
+    mode: single
+    sequence:
+      - variables:
+          selected_schedule: "{{ schedule_entity | default('', true) | trim }}"
+      - condition: template
+        value_template: >-
+          {{ selected_schedule.startswith('switch.schedule_')
+             and selected_schedule in (states.switch | map(attribute='entity_id') | list)
+             and 'script.heating_scheduled_run' in (state_attr(selected_schedule, 'entities') or []) }}
+      - condition: template
+        value_template: "{{ is_state(selected_schedule, 'off') }}"
+      - action: scheduler.remove
+        data:
+          entity_id: "{{ selected_schedule }}"
+
+  # Edit schedule in place, with rename and duplicate-name safeguards.
+  heating_update_schedule:
+    alias: Heating - Update Existing Schedule
+    mode: single
+    max_exceeded: warning
+    sequence:
+      - variables:
+          selected_schedule: "{{ states('input_text.heating_edit_selected') | trim }}"
+          schedule_name: "{{ states('input_text.heating_schedule_name') | trim }}"
+          start_time: "{{ states('input_datetime.heating_new_on_time')[:5] }}"
+          duration_minutes: >-
+            {% set choices = {'15 minutes':15,'30 minutes':30,'45 minutes':45,'1 hour':60,
+              '1 hour 30 minutes':90,'2 hours':120,'3 hours':180,'4 hours':240} %}
+            {{ choices.get(states('input_select.heating_duration_choice'), 0) }}
+          chosen_days: >-
+            {% set ns = namespace(days=[]) %}
+            {% for day in ['mon','tue','wed','thu','fri','sat','sun'] %}
+              {% if is_state('input_boolean.heating_day_' ~ day, 'on') %}
+                {% set ns.days = ns.days + [day] %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.days }}
+      - condition: template
+        value_template: >-
+          {{ selected_schedule.startswith('switch.schedule_')
+             and selected_schedule in (states.switch | map(attribute='entity_id') | list)
+             and 'script.heating_scheduled_run' in (state_attr(selected_schedule, 'entities') or []) }}
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.heating_save_status
+        data:
+          option: saving
+      - if:
+          - condition: template
+            value_template: >-
+              {{ schedule_name | lower in ['', 'new heating schedule']
+                 or not (5 <= (duration_minutes | int(0)) <= 240)
+                 or (chosen_days | count) == 0 or (start_time | length) != 5 }}
+        then:
+          - action: input_select.select_option
+            target:
+              entity_id: input_select.heating_save_status
+            data:
+              option: invalid
+          - stop: Invalid edited heating schedule
+      - variables:
+          original_name: >-
+            {{ (state_attr(selected_schedule, 'friendly_name') or selected_schedule)
+               | regex_replace('^Scheduler\s+', '', ignorecase=True) | trim }}
+      - variables:
+          name_changed: "{{ schedule_name != original_name }}"
+          duplicate_name: >-
+            {% set ns = namespace(found=false) %}
+            {% set wanted = schedule_name | lower | trim %}
+            {% for item in states.switch %}
+              {% if item.entity_id.startswith('switch.schedule_') and item.entity_id != selected_schedule %}
+                {% set existing = item.name | lower | trim
+                  | regex_replace('^scheduler\s+', '', ignorecase=True) | trim %}
+                {% if existing == wanted %}{% set ns.found = true %}{% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.found }}
+      - if:
+          - condition: template
+            value_template: "{{ name_changed | bool(false) and duplicate_name | bool(false) }}"
+        then:
+          - action: input_select.select_option
+            target:
+              entity_id: input_select.heating_save_status
+            data:
+              option: duplicate
+          - stop: Duplicate schedule name prevented
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ name_changed | bool(false) }}"
+            sequence:
+              - action: scheduler.edit
+                data:
+                  entity_id: "{{ selected_schedule }}"
+                  name: "{{ schedule_name }}"
+                  weekdays: "{{ chosen_days }}"
+                  timeslots:
+                    - start: "{{ start_time }}"
+                      actions:
+                        - service: script.turn_on
+                          entity_id: script.heating_scheduled_run
+                          service_data:
+                            variables:
+                              minutes: "{{ duration_minutes | int(0) }}"
+        default:
+          - action: scheduler.edit
+            data:
+              entity_id: "{{ selected_schedule }}"
+              weekdays: "{{ chosen_days }}"
+              timeslots:
+                - start: "{{ start_time }}"
+                  actions:
+                    - service: script.turn_on
+                      entity_id: script.heating_scheduled_run
+                      service_data:
+                        variables:
+                          minutes: "{{ duration_minutes | int(0) }}"
+      - action: script.heating_cancel_schedule
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.heating_save_status
+        data:
+          option: saved
+
+automation:
+  - id: heating_scheduler_timer_finished
+    alias: Heating - Scheduled Timer Finished
+    triggers:
+      - trigger: event
+        event_type: timer.finished
+        event_data:
+          entity_id: timer.heating_display_timer
+    actions:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.heating
+  - id: heating_scheduler_restart_safety
+    alias: Heating - Restart Safety
+    triggers:
+      - trigger: homeassistant
+        event: start
+    actions:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.heating
+      - action: timer.cancel
+        target:
+          entity_id: timer.heating_display_timer
+  - id: heating_scheduler_manual_off
+    alias: Heating - Stop Countdown When Switched Off
+    triggers:
+      - trigger: state
+        entity_id: switch.heating
+        to: "off"
+    conditions:
+      - condition: state
+        entity_id: timer.heating_display_timer
+        state: active
+    actions:
+      - action: timer.cancel
+        target:
+          entity_id: timer.heating_display_timer
+  - id: heating_schedule_clear_success
+    alias: Heating - Clear Saved Confirmation
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: input_select.heating_save_status
+        to: saved
+    actions:
+      - delay: "00:00:05"
+      - condition: state
+        entity_id: input_select.heating_save_status
+        state: saved
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.heating_save_status
+        data:
+          option: idle
+
+template:
+  - binary_sensor:
+      - name: Heating Schedule Form Valid
+        unique_id: heating_schedule_form_valid
+        state: >-
+          {% set name = states('input_text.heating_schedule_name') | trim %}
+          {% set days = ['input_boolean.heating_day_mon', 'input_boolean.heating_day_tue',
+           'input_boolean.heating_day_wed', 'input_boolean.heating_day_thu',
+           'input_boolean.heating_day_fri', 'input_boolean.heating_day_sat',
+           'input_boolean.heating_day_sun'] %}
+          {{ name | length > 0 and name | lower != 'new heating schedule'
+             and expand(days) | selectattr('state', 'eq', 'on') | list | count > 0 }}

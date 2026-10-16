@@ -1,0 +1,159 @@
+# Portable Manage Schedules — single-column mobile to avoid action overlap
+type: custom:bubble-card
+card_type: pop-up
+hash: '#manageheat'
+name: Manage Heating Schedules
+icon: mdi:calendar-edit
+popup_mode: centered
+width_desktop: 600px
+full_width_on_mobile: false
+scrolling_effect: false
+close_action:
+  action: navigate
+  navigation_path: '#heatpop'
+cards:
+  - type: custom:bubble-card
+    card_type: separator
+    name: Existing Heating Schedules
+    icon: mdi:calendar-edit
+  - type: custom:auto-entities
+    card:
+      type: custom:layout-card
+      layout_type: custom:grid-layout
+      layout:
+        grid-template-columns: repeat(2, minmax(0, 1fr))
+        grid-gap: 12px
+        mediaquery:
+          "(max-width: 600px)":
+            grid-template-columns: 1fr
+    card_param: cards
+    show_empty: false
+    filter:
+      include:
+        - entity_id: switch.schedule_*
+          attributes:
+            entities: "$*script.heating_scheduled_run*"
+          options:
+            type: custom:button-card
+            name: |
+              [[[
+                return (entity.attributes.friendly_name || entity.entity_id)
+                  .replace(/^Scheduler\s+/i, '');
+              ]]]
+            icon: mdi:av-timer
+            show_name: true
+            show_icon: true
+            show_state: false
+            show_label: true
+            label: |
+              [[[
+                const a = (entity.attributes.actions || []).find(x => x.service === 'script.turn_on');
+                const n = Number(a?.data?.variables?.minutes);
+                const h = Math.floor(n / 60), m = n % 60;
+                const duration = !Number.isFinite(n) || n <= 0 ? 'Duration unavailable'
+                  : h && m ? h + ' hr ' + m + ' min'
+                  : h ? (h === 1 ? '1 hour' : h + ' hours') : n + ' minutes';
+                const days = entity.attributes.weekdays || [];
+                const ordered = ['mon','tue','wed','thu','fri','sat','sun'];
+                const labels = {mon:'Mon',tue:'Tue',wed:'Wed',thu:'Thu',fri:'Fri',sat:'Sat',sun:'Sun'};
+                const dayText = ordered.every(d => days.includes(d)) ? 'Every day'
+                  : ['mon','tue','wed','thu','fri'].every(d => days.includes(d))
+                    && !days.includes('sat') && !days.includes('sun') ? 'Mon–Fri'
+                  : days.length === 2 && days.includes('sat') && days.includes('sun') ? 'Weekends'
+                  : ordered.filter(d => days.includes(d)).map(d => labels[d]).join(', ') || 'Days unavailable';
+                const status = entity.state === 'on' ? '● Enabled'
+                  : entity.state === 'off' ? '○ Disabled' : 'Status unavailable';
+                return duration + ' · ' + dayText + '\n' + status;
+              ]]]
+            tap_action:
+              action: more-info
+            hold_action:
+              action: none
+            custom_fields:
+              edit:
+                card:
+                  type: custom:button-card
+                  entity: |
+                    [[[ return entity.entity_id; ]]]
+                  icon: mdi:pencil-outline
+                  show_name: false
+                  show_icon: true
+                  tap_action:
+                    action: multi-actions
+                    actions:
+                      - action: perform-action
+                        perform_action: input_text.set_value
+                        target:
+                          entity_id: input_text.heating_edit_selected
+                        data:
+                          value: |
+                            [[[ return entity.entity_id; ]]]
+                      - action: perform-action
+                        perform_action: script.turn_on
+                        target:
+                          entity_id: script.heating_load_schedule_for_edit
+                      - wait_completion: |
+                          [[[
+                            return states['script.heating_load_schedule_for_edit']?.state === 'off';
+                          ]]]
+                        timeout: 5s
+                      - action: navigate
+                        navigation_path: '#addheat'
+                  styles:
+                    card:
+                      - background: transparent
+                      - box-shadow: none
+                      - border: none
+                      - padding: 0
+                      - width: 36px
+                      - height: 36px
+                    icon:
+                      - color: var(--primary-color)
+                      - width: 22px
+            state:
+              - value: 'on'
+                icon: mdi:timer-check
+                color: green
+              - value: 'off'
+                icon: mdi:timer-off-outline
+                color: grey
+            styles:
+              card:
+                - min-height: 150px
+                - border-radius: 16px
+                - box-shadow: none
+                - padding: 10px
+              grid:
+                - grid-template-areas: '"i i" "n n" "l l" ". edit"'
+                - grid-template-columns: 1fr 36px
+                - grid-template-rows: 34px min-content min-content 38px
+                - row-gap: 3px
+              icon:
+                - width: 30px
+                - justify-self: center
+              name:
+                - font-size: 14px
+                - line-height: 1.3
+                - white-space: normal
+                - text-align: center
+              label:
+                - font-size: 12px
+                - color: var(--secondary-text-color)
+                - white-space: pre-line
+                - line-height: 1.4
+                - text-align: center
+              custom_fields:
+                edit:
+                  - grid-area: edit
+                  - justify-self: end
+                  - align-self: center
+    sort:
+      method: friendly_name
+  - type: custom:mushroom-legacy-template-card
+    primary: Back to Heating Control
+    icon: mdi:arrow-left
+    icon_color: primary
+    layout: horizontal
+    tap_action:
+      action: navigate
+      navigation_path: '#heatpop'

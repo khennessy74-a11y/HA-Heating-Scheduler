@@ -1,0 +1,135 @@
+name: Portable YAML bundle
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "portable/**"
+      - ".github/workflows/portable-yaml-bundle.yml"
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install YAML parser
+        run: python -m pip install PyYAML==6.0.2 Jinja2==3.1.6
+      - name: Validate portable YAML and linkages
+        run: |
+          python - <<'PY'
+          import pathlib
+          import yaml
+          root = pathlib.Path("portable")
+          names = [
+              "packages/heating_scheduler.yaml",
+              "dashboard/heating-control.yaml",
+              "dashboard/add-edit-schedule.yaml",
+              "dashboard/manage-schedules.yaml",
+          ]
+          docs = [yaml.safe_load((root / n).read_text()) for n in names]
+          backend, heat, editor, manage = docs
+          required_scripts = {
+              "heating_scheduled_run", "heating_cancel_schedule",
+              "heating_load_schedule_for_edit", "heating_create_schedule",
+              "heating_delete_schedule", "heating_update_schedule",
+          }
+          assert required_scripts <= set(backend["script"])
+          assert len(backend["automation"]) == 4
+          assert [d["hash"] for d in docs[1:]] == ["#heatpop", "#addheat", "#manageheat"]
+          assert "timer" not in backend, "Timer is configured separately to avoid helper collision"
+          assert "script.heating_create_schedule" in (root / names[2]).read_text()
+          print("PASS: four YAML files parse; required scripts, automations, and pop-up hashes present.")
+          print("NOTE: HA runtime, Scheduler service schema and iPhone layout are NOT verified by this job.")
+          PY
+      - name: Run portable structural regression tests
+        run: python -m unittest discover -s portable/tests -p 'test_*.py' -v
+      - name: Assemble ZIP
+        run: |
+          mkdir -p dist
+          python - <<'PY'
+          import hashlib, pathlib, zipfile
+          root = pathlib.Path("portable")
+          out = pathlib.Path("dist/HA-Heating-Scheduler-portable-YAML-candidate.zip")
+          includes = ["INSTALL.md", "README.md", "RELEASE_CANDIDATE.md",
+                      "packages/heating_scheduler.yaml",
+                      "dashboard/heating-control.yaml",
+                      "dashboard/add-edit-schedule.yaml",
+                      "dashboard/manage-schedules.yaml"]
+          with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+              for name in includes:
+                  p = root / name
+                  assert p.is_file(), name
+                  z.write(p, p.as_posix())
+          with zipfile.ZipFile(out) as z:
+              bad = z.testzip()
+              assert bad is None, bad
+              assert len(z.namelist()) == len(includes)
+              print("ZIP includes:", *z.namelist(), sep="\n - ")
+          digest = hashlib.sha256(out.read_bytes()).hexdigest()
+          (out.parent / (out.name + ".sha256")).write_text(f"{digest}  {out.name}\n")
+          print("SHA-256:", digest)
+          PY
+      - name: Verify distribution archive and checksum
+        run: |
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          out = Path("dist/HA-Heating-Scheduler-portable-YAML-candidate.zip")
+          checksum = Path(str(out) + ".sha256")
+          expected_files = {
+              "portable/INSTALL.md",
+              "portable/README.md",
+              "portable/RELEASE_CANDIDATE.md",
+              "portable/packages/heating_scheduler.yaml",
+              "portable/dashboard/heating-control.yaml",
+              "portable/dashboard/add-edit-schedule.yaml",
+              "portable/dashboard/manage-schedules.yaml",
+          }
+          assert out.is_file() and checksum.is_file()
+          expected = checksum.read_text().split()[0]
+          actual = hashlib.sha256(out.read_bytes()).hexdigest()
+          assert expected == actual, "Distribution checksum mismatch"
+          with ZipFile(out) as archive:
+              assert archive.testzip() is None, "Archive has corrupt entries"
+              contents = set(archive.namelist())
+              assert contents == expected_files, (contents - expected_files, expected_files - contents)
+              assert not any("/tests/" in name for name in contents)
+          print("PASS: archive files and SHA-256 verified independently")
+          PY
+      - name: Upload portable YAML ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: portable-heating-scheduler-yaml-candidate
+          path: |
+            dist/*.zip
+            dist/*.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+  mobile-browser:
+    name: Portable iPhone-width Chromium grid checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prepare YAML-derived layout fixture
+        run: |
+          python -m pip install PyYAML==6.0.2
+          python portable/tests/export_mobile_fixture.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install browser
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Check mobile layout in Chromium
+        run: node --test portable/tests/mobile_browser.test.cjs
