@@ -34,3 +34,7 @@ This ZIP is a **manual YAML installation candidate**; it is not itself a HACS cu
 ## Installation path
 
 See [INSTALL.md](INSTALL.md). Make a full backup, keep the tested production configuration untouched, and use a separate test environment when one becomes available.
+
+## Release artifact
+
+The `Portable YAML bundle` GitHub Actions workflow exports a minimal candidate ZIP with the backend YAML, three dashboard pop-ups and installation/release notes. Test source files are intentionally excluded. The workflow also publishes a matching `.sha256` file in the same Actions artifact. Download both files and verify the ZIP checksum before extracting. The candidate remains untested in an installed Home Assistant environment.
