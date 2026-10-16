@@ -31,6 +31,8 @@ cards:
     filter:
       include:
         - entity_id: switch.schedule_*
+          attributes:
+            entities: script.heating_scheduled_run
           options:
             type: custom:button-card
             name: |
