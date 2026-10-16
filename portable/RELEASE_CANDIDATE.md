@@ -26,7 +26,7 @@ This ZIP is a **manual YAML installation candidate**; it is not itself a HACS cu
 3. Import all three pop-ups and verify Add, Edit, Rename, Save/Cancel, enable/disable and guarded Delete.
 4. Verify phone layout and pencil/delete taps on an actual Home Assistant frontend.
 5. Confirm start/stop, switch acknowledgement failure, timeout, Home Assistant restart and timer completion with a safe load.
-6. Scope schedule discovery to *this* integration's heating schedules: current wildcard `switch.schedule_*` may capture unrelated Scheduler schedules on a shared installation.
+6. Verify heating-only schedule filtering on a running Home Assistant instance. Both dashboard lists now require the Scheduler entity's `entities` attribute to contain `script.heating_scheduled_run` (using Auto-Entities `$` JSON string matching), but this has not been tested against live Scheduler attributes or the actual installed Auto-Entities version.
 7. Prevent simultaneous control by the legacy YAML and new Python integration over the same physical outlet.
 
 **Do not advertise v1.0 stable, merge the draft PR, or control a live heater based only on automated checks.**
