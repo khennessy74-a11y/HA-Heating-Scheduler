@@ -50,23 +50,35 @@ jobs:
         run: |
           mkdir -p dist
           python - <<'PY'
-          import pathlib, zipfile
+          import hashlib, pathlib, zipfile
           root = pathlib.Path("portable")
           out = pathlib.Path("dist/HA-Heating-Scheduler-portable-YAML-candidate.zip")
+          includes = ["INSTALL.md", "README.md", "RELEASE_CANDIDATE.md",
+                      "packages/heating_scheduler.yaml",
+                      "dashboard/heating-control.yaml",
+                      "dashboard/add-edit-schedule.yaml",
+                      "dashboard/manage-schedules.yaml"]
           with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
-              for p in sorted(root.rglob("*")):
-                  if p.is_file():
-                      z.write(p, p.as_posix())
+              for name in includes:
+                  p = root / name
+                  assert p.is_file(), name
+                  z.write(p, p.as_posix())
           with zipfile.ZipFile(out) as z:
               bad = z.testzip()
               assert bad is None, bad
+              assert len(z.namelist()) == len(includes)
               print("ZIP includes:", *z.namelist(), sep="\n - ")
+          digest = hashlib.sha256(out.read_bytes()).hexdigest()
+          (out.parent / (out.name + ".sha256")).write_text(f"{digest}  {out.name}\n")
+          print("SHA-256:", digest)
           PY
       - name: Upload portable YAML ZIP
         uses: actions/upload-artifact@v4
         with:
           name: portable-heating-scheduler-yaml-candidate
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/*.sha256
           if-no-files-found: error
           retention-days: 14
 
