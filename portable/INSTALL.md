@@ -35,7 +35,13 @@ Disable the schedule(s) created for testing, remove the new dashboard cards, rem
 ## Frontend dependencies for existing pop-ups
 Bubble Card, Mushroom, Auto-Entities, Button Card, Super Text Input, Card Mod, and Layout Card (for responsive Manage pop-up). Verify installed versions and exact custom-card resource names.
 ## Known limits and release gate
-- The dynamic `switch.schedule_*` filter can include unrelated Scheduler schedules in a shared HA instance. **Do not use deletion or editing controls on unrelated schedules.** A heating-only filtering mechanism is needed before general release.
+- Both lists now filter `switch.schedule_*` entries by a serialized `entities` attribute containing `script.heating_scheduled_run`. This still needs validation with the actual Scheduler Component and Auto-Entities versions before using editing or deletion on a shared installation.
 - `#manageheat` uses `layout-card`; ensure its Lovelace resource is installed.
-- The card structure and generated ZIP are CI-validated for YAML parsing, **not browser- or Home Assistant-runtime tested**. The iPhone layout and nested Button Card actions still require manual verification.
+- The card structure and ZIP pass CI parsing and Chromium **representative-grid** layout checks. The actual Home Assistant frontend and nested Button Card actions are not runtime tested; verify on an iPhone before release.
 - Never activate this package and the experimental Python integration against the same physical outlet simultaneously.
+
+## Download and verify the candidate (Windows)
+
+1. Open the latest successful **Portable YAML bundle** run under GitHub Actions. Download its artifact and extract the GitHub artifact wrapper. It contains the candidate installer ZIP and its `.sha256` checksum.
+2. In PowerShell, run `Get-FileHash -Algorithm SHA256 .\HA-Heating-Scheduler-portable-YAML-candidate.zip` and compare the displayed hash to the first hexadecimal value in the matching `.sha256` file. The two values must agree.
+3. Only then extract the candidate installer ZIP. Its `portable/` folder contains the files documented above. Keep the production installation unchanged until the separate HA test gate passes.
