@@ -72,6 +72,35 @@ jobs:
           (out.parent / (out.name + ".sha256")).write_text(f"{digest}  {out.name}\n")
           print("SHA-256:", digest)
           PY
+      - name: Verify distribution archive and checksum
+        run: |
+          python - <<'PY'
+          import hashlib
+          from pathlib import Path
+          from zipfile import ZipFile
+
+          out = Path("dist/HA-Heating-Scheduler-portable-YAML-candidate.zip")
+          checksum = Path(str(out) + ".sha256")
+          expected_files = {
+              "portable/INSTALL.md",
+              "portable/README.md",
+              "portable/RELEASE_CANDIDATE.md",
+              "portable/packages/heating_scheduler.yaml",
+              "portable/dashboard/heating-control.yaml",
+              "portable/dashboard/add-edit-schedule.yaml",
+              "portable/dashboard/manage-schedules.yaml",
+          }
+          assert out.is_file() and checksum.is_file()
+          expected = checksum.read_text().split()[0]
+          actual = hashlib.sha256(out.read_bytes()).hexdigest()
+          assert expected == actual, "Distribution checksum mismatch"
+          with ZipFile(out) as archive:
+              assert archive.testzip() is None, "Archive has corrupt entries"
+              contents = set(archive.namelist())
+              assert contents == expected_files, (contents - expected_files, expected_files - contents)
+              assert not any("/tests/" in name for name in contents)
+          print("PASS: archive files and SHA-256 verified independently")
+          PY
       - name: Upload portable YAML ZIP
         uses: actions/upload-artifact@v4
         with:
