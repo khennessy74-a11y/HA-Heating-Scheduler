@@ -2,60 +2,55 @@
 
 A community Home Assistant heating scheduler project, developed on GitHub.
 
-> **Status: development / pre-release. Not ready to control a live heating system.**
+> **Status: pre-release. The portable YAML candidate is available for isolated testing; neither track is approved for controlling a live heating system.**
 
-## Goal
+## Two development tracks
 
-A GitHub-distributed custom integration for timed heating, using [Scheduler Component](https://github.com/nielsfaber/scheduler-component) as the recurring scheduling engine. **HACS is not required to install this project** (although Scheduler Component is a separately installed dependency).
+### Portable YAML candidate
 
-## Prerequisites
+The `portable/` folder contains a complete manual-install candidate:
 
-**Heating Scheduler integration (backend):**
-- Home Assistant with an available `switch.*` entity for the device you eventually plan to control.
-- [Scheduler Component](https://github.com/nielsfaber/scheduler-component) for recurring schedules (separate custom integration).
-- Manual installation from GitHub is supported; **HACS is not required to install Heating Scheduler itself**. HACS is a convenient way to install/manage some optional custom dependencies.
+- A Home Assistant package with helpers, scripts, automations and timer handling.
+- Three Lovelace pop-ups for Heating Control, Add/Edit and Manage Schedules.
+- Installation, rollback and release-gate documentation.
 
-**Approved Lovelace mobile dashboard (additional frontend prerequisites):**
-- [Bubble Card](https://github.com/Clooos/Bubble-Card) — popup interface.
-- [Mushroom Cards](https://github.com/piitaya/lovelace-mushroom) — dashboard controls/cards.
-- [Auto-Entities](https://github.com/thomasloven/lovelace-auto-entities) — dynamic schedule lists.
-- [Button Card](https://github.com/custom-cards/button-card) — schedule rows and actions.
-- [Card Mod](https://github.com/thomasloven/lovelace-card-mod) — appearance and spacing.
-- [Super Text Inputs](https://github.com/iantrich/text-input-row) — **verify the exact custom text-input card used by the final dashboard YAML before publishing a dependency link**.
+Start with **[portable/INSTALL.md](portable/INSTALL.md)**. The candidate is distributed as a ZIP by the **Portable YAML bundle** GitHub Actions workflow. It is not a HACS custom integration.
 
-These frontend components are required **only if the finished dashboard actually uses them**. They are not needed for backend-only setup or GitHub CI checks. The integration-native dashboard is still being developed; we will verify the exact dependency list against its final YAML before release.
+### Experimental Python integration
 
-## Tested reference implementation
+The `custom_components/` tree is a separate, experimental integration track. It is not included in the portable YAML ZIP and should not be installed alongside the YAML controller on the same physical switch.
 
-The existing YAML-package-based scheduler is the functional reference. Its tested features include:
+## Portable YAML prerequisites
 
-- Create schedules with an **Enabled by default** toggle, or save disabled.
-- Edit schedule name, start time, duration, weekdays, and enabled state together.
-- Prevent duplicate names and require confirmation before deleting disabled schedules.
-- Time-limited heating with switch confirmation and automatic OFF.
-- iPhone-friendly one-column Heating Control and Manage dashboards.
-- Tap a schedule in Heating Control to **edit** (not toggle); enable/disable within the edit form.
+**Backend:**
+- Home Assistant with packages, scripts, automations, timers and template entities.
+- [Scheduler Component](https://github.com/nielsfaber/scheduler-component), installed separately, with its `scheduler.add`, `scheduler.edit` and `scheduler.remove` services available.
+- A test `switch.*` entity. The default package entity is `switch.heating`; map it to a spare test outlet or relay before testing.
+- A `timer.heating_display_timer` helper, created once.
 
-**Important:** Those features are tested in the existing YAML implementation, **not yet verified in this custom integration**. The working Home Assistant configuration must remain unchanged.
+**Dashboard (only if using the supplied pop-ups):**
+- [Bubble Card](https://github.com/Clooos/Bubble-Card)
+- [Mushroom Cards](https://github.com/piitaya/lovelace-mushroom) — the YAML uses `mushroom-legacy-template-card`.
+- [Auto-Entities](https://github.com/thomasloven/lovelace-auto-entities)
+- [Button Card](https://github.com/custom-cards/button-card)
+- [Super Text Input](https://github.com/skavan/super-text-input)
+- [Card Mod](https://github.com/thomasloven/lovelace-card-mod)
+- [Layout Card](https://github.com/thomasloven/lovelace-layout-card)
 
-## Repository development plan
+## What is covered by the checks
 
-1. Import and review the beta integration source on a development branch.
-2. Add automated Python, YAML, JSON and package structure checks.
-3. Integrate the approved dashboard workflow.
-4. Validate Scheduler Component services against a test Home Assistant instance and a **separate test switch**.
-5. Publish a GitHub release with manual installation instructions.
+The portable workflow parses and packages the YAML, runs structural/in-memory checks and checks representative mobile grid positioning in Chromium. These checks do **not** run the scripts inside Home Assistant, load the actual custom frontend cards, or replace testing on a real phone.
+
+Remaining runtime gates include validating Scheduler Component services and entity attributes, schedule filtering, Add/Edit/Delete actions, timer expiry, switch acknowledgement, restart behaviour and mobile presentation in a disposable Home Assistant instance.
 
 ## Safety / coexistence
 
-Do not operate the new integration and the legacy YAML scheduler against the same physical switch at the same time. Both systems could independently turn it OFF. The integration must not migrate, disable or delete existing schedules automatically.
+Do not operate the YAML scheduler and experimental Python integration against the same physical switch. Both systems could independently turn it OFF. Keep the working Home Assistant configuration unchanged while testing the candidate on a separate instance and spare switch.
 
-The target v1 switch types are smart power outlets, relays, Zigbee/Z-Wave and ESPHome devices exposed as `switch.*`. Thermostat `climate.*` entities need separate logic and are out of scope for v1.
+Heating control is not a substitute for electrical, over-temperature or hardware protection. Use appropriately rated switches and heaters, with independent safety controls.
 
-Heating control must not be treated as a substitute for electrical, overtemperature, or hardware protection. Use appropriately rated switches and heaters.
-
-See [ROADMAP.md](ROADMAP.md) for planned work.
+See [portable/README.md](portable/README.md) for the YAML candidate overview and [ROADMAP.md](ROADMAP.md) for planned work.
 
 ## Support the project ☕
 
-If this Heating Scheduler is useful and you'd like to support its development, [buy me a coffee](https://buymeacoffee.com/khennessy74). Contributions are entirely optional.
+If this project is useful and you'd like to support its development, [buy me a coffee](https://buymeacoffee.com/khennessy74). Contributions are entirely optional.
