@@ -4,7 +4,6 @@ This folder contains the complete **YAML-first portable candidate**. It is separ
 
 ## Status
 
-<badge-placeholder>
 
 The package and all three dashboard pop-ups are included and pass the repository's automated YAML, structure, packaging and representative mobile-layout checks. They have **not** yet been installed and exercised in a second running Home Assistant instance. Treat this as a test candidate, not a stable release for a live heater.
 
