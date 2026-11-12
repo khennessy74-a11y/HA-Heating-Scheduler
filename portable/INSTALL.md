@@ -2,62 +2,107 @@
 
 **Status:** YAML syntax checked and package contents verified. Not yet tested on a second running Home Assistant instance. **Do not deploy to a live heater without independent safety controls and a successful test run.**
 
-This bundle includes the backend package and **three** dashboard pop-ups (`heating-control.yaml`, `add-edit-schedule.yaml`, `manage-schedules.yaml`). Import all three as cards in the same Lovelace view, preferably at the end of that view. This is a **portable YAML candidate for manual installation**, not a HACS-installable integration.
+This is a **manual YAML installation**, not a HACS integration. The bundle contains one backend package, the complete main dashboard section, and three scheduler pop-ups. Install and verify every dependency **before** importing any Heating Scheduler YAML.
 
-## Requirements
+## 1. Install all dependencies first
 
-- Home Assistant supporting packages, scripts, timers, template entities and recent automation YAML syntax.
-- [Scheduler Component](https://github.com/nielsfaber/scheduler-component) installed as a separate custom integration, with its `scheduler.add`, `scheduler.edit`, `scheduler.remove` services available.
-- A `switch.heating` entity, or replace **all** package references to it with the destination test `switch.*` entity.
-- A timer entity `timer.heating_display_timer` (create as a UI Helper or define once via YAML).
+Do not start by copying the package. First install the prerequisites below, then confirm Home Assistant has loaded them.
 
-**Dashboard dependencies** (required only when importing the supplied pop-ups):
-- [Bubble Card](https://github.com/Clooos/Bubble-Card)
-- [Mushroom Cards](https://github.com/piitaya/lovelace-mushroom) — this YAML uses `mushroom-legacy-template-card`.
-- [Auto-Entities](https://github.com/thomasloven/lovelace-auto-entities)
-- [Button Card](https://github.com/custom-cards/button-card)
-- [Super Text Input](https://github.com/skavan/super-text-input) — registers `custom:super-text-input`.
-- [Card Mod](https://github.com/thomasloven/lovelace-card-mod)
-- [Layout Card](https://github.com/thomasloven/lovelace-layout-card) — used by the Manage pop-up.
+### 1.1 Backend dependency
 
-Install the frontend cards and confirm their Lovelace resources are loaded before importing the pop-ups. Backend-only testing does not require these dashboard cards.
+- [Scheduler Component](https://github.com/nielsfaber/scheduler-component) — install as a Home Assistant custom integration (HACS if available, otherwise follow its repository installation instructions). Restart Home Assistant after installing it. Confirm the `scheduler.add`, `scheduler.edit` and `scheduler.remove` services are available in Developer Tools → Actions.
 
-## Setup
+### 1.2 Lovelace / frontend dependencies
 
-1. Back up your Home Assistant configuration. Use a **separate/disposable Home Assistant instance** for the first installation; do not replace your working heating setup.
-2. Install Scheduler Component and confirm its three Scheduler services exist.
-3. Create a Timer helper called Heating Display Timer with entity ID `timer.heating_display_timer`, restore enabled; **do not create a duplicate if it already exists**.
-4. Pick a **spare test** smart outlet/relay for trial operation. Do not use the existing heater. If the test entity is not `switch.heating`, replace every `switch.heating` reference in `packages/heating_scheduler.yaml` with the actual test `switch.*` entity. Smart plugs, Zigbee/Z-Wave relays, ESPHome and Wi-Fi outlets are supported insofar as they expose a switch entity; `climate.*` is not supported by this candidate.
-5. Copy `packages/heating_scheduler.yaml` to `/config/packages/heating_scheduler.yaml`, and enable packages in `/config/configuration.yaml`, for example:
+Install all of these through HACS → Frontend (or the repository's documented HACS custom-repository method where needed):
 
-    ```yaml
-    homeassistant:
-      packages: !include_dir_named packages
-    ```
+- [Expander Card](https://github.com/Alia5/lovelace-expander-card) — required by the main dashboard section (`custom:expander-card`). If it is not listed in HACS, add `https://github.com/Alia5/lovelace-expander-card` as a **Dashboard** custom repository, then install it.
+- [Bubble Card](https://github.com/Clooos/Bubble-Card) — main section and scheduler pop-ups.
+- [Mushroom Cards](https://github.com/piitaya/lovelace-mushroom) — pop-ups use `mushroom-legacy-template-card`.
+- [Auto-Entities](https://github.com/thomasloven/lovelace-auto-entities) — schedule lists.
+- [Button Card](https://github.com/custom-cards/button-card) — schedule controls and actions.
+- [Super Text Input](https://github.com/skavan/super-text-input) — Add/Edit form (`custom:super-text-input`).
+- [Card Mod](https://github.com/thomasloven/lovelace-card-mod) — form styling.
+- [Layout Card](https://github.com/thomasloven/lovelace-layout-card) — responsive Manage Schedules layout.
 
-   Merge that stanza into your **existing** `homeassistant:` section; do not duplicate a top-level section.
-6. Check Home Assistant YAML configuration before restarting. Reload scripts, automations and template entities if available, or restart once.
-7. Verify that all six `script.heating_*` entities and `binary_sensor.heating_schedule_form_valid` exist.
-8. In Dashboard Edit mode, add each YAML file from `dashboard/` as one Manual card in the **same dashboard view**, in this order: Heating Control, Add/Edit, Manage. Keep the popup hashes (`#heatpop`, `#addheat`, `#manageheat`) unchanged. Add an ordinary dashboard button that navigates to `#heatpop`. Confirm the custom card resources have loaded before testing. Test Add, Edit, Rename, Cancel, disabled-only Delete, enabled state and mobile layout using disposable schedules.
-9. Test timer expiration and switch OFF, manual OFF, failed switch-ON confirmation, restart behaviour and schedule trigger using a **safe test load**, never a heater first.
+After installing the frontend cards, restart Home Assistant if HACS requests it, then hard-refresh the browser / Home Assistant app so the Lovelace resources load. Confirm the cards are available before continuing. These are frontend custom cards, not Home Assistant OS add-ons.
 
-## Why this isn't auto-installed through HACS
+### 1.3 Home Assistant prerequisites
 
-HACS custom integrations install `custom_components/` code; they do not automatically install arbitrary package YAML or Lovelace pop-ups. This ZIP is a manual YAML package. The separate Python integration in the repository is experimental and must not run against the same outlet as this YAML controller.
+- Home Assistant with packages, scripts, automations, timers and template entities enabled.
+- A spare **test** `switch.*` entity. The default is `switch.heating`; do not connect this test candidate to a live heater.
+- A timer entity `timer.heating_display_timer`. You can create it as a UI Helper or define it once in YAML. Do not create a duplicate if it already exists.
 
-## Rollback
+## 2. Prepare a safe test installation
 
-Disable the schedules created for testing, remove the new dashboard cards, remove the new package from your configuration, and restart Home Assistant. Do not delete an existing timer or Scheduler Component if other automations still rely on them.
+1. Back up your Home Assistant configuration.
+2. Use a separate/disposable Home Assistant instance for first installation. Keep your working Home Assistant heating configuration unchanged.
+3. Select a spare test switch. If it is not `switch.heating`, replace **every** `switch.heating` reference in `packages/heating_scheduler.yaml` with that test entity ID before installing. This candidate controls a `switch.*` entity; it does not directly control a `climate.*` entity.
+4. Create `timer.heating_display_timer` once, with restore enabled, unless it already exists.
 
-## Known limits and release gates
+## 3. Install the backend package
 
-- Both schedule lists filter `switch.schedule_*` entities by a serialized `entities` attribute containing `script.heating_scheduled_run`. This still needs validation with the actual Scheduler Component and Auto-Entities versions before using editing or deletion on a shared installation.
-- `#manageheat` uses `layout-card`; ensure its Lovelace resource is installed.
-- The card structure and ZIP pass CI parsing and Chromium **representative-grid** layout checks. The actual Home Assistant frontend, custom-card resources and nested Button Card actions are not runtime tested; verify on a real Home Assistant test instance and phone before release.
-- Never activate this package and the experimental Python integration against the same physical outlet simultaneously.
+1. Copy `packages/heating_scheduler.yaml` to `/config/packages/heating_scheduler.yaml`.
+2. Enable packages in `/config/configuration.yaml` using the following stanza:
+
+   ```yaml
+   homeassistant:
+     packages: !include_dir_named packages
+   ```
+
+   Merge this into your existing top-level `homeassistant:` section. Do **not** add a second `homeassistant:` key. The folder name in the include must match the actual folder name exactly; this example uses lowercase `packages`.
+3. Run Home Assistant's configuration check. Resolve errors before restarting.
+4. Restart Home Assistant (or reload the relevant scripts, automations and template entities if your version supports all of those reloads).
+5. Confirm these entities exist:
+   - `script.15_minute_boost`
+   - `script.30_minute_boost`
+   - `script.1_hour_boost`
+   - `script.2_hour_boost`
+   - `script.heating_scheduled_run`
+   - `script.heating_cancel_schedule`
+   - `script.heating_load_schedule_for_edit`
+   - `script.heating_create_schedule`
+   - `script.heating_delete_schedule`
+   - `script.heating_update_schedule`
+   - `timer.heating_display_timer`
+   - `binary_sensor.heating_schedule_form_valid`
+
+If any entity is missing, stop and inspect the configuration / startup logs. Do not continue to dashboard import until the backend entities exist.
+
+## 4. Add the dashboard cards
+
+In Dashboard → Edit dashboard, add each supplied YAML file as a **Manual** card. Add them to the same dashboard view so the Bubble Card navigation hashes work. Keep the hashes unchanged.
+
+1. `dashboard/main-heating-section.yaml` — add this to the desired position in your dashboard. It supplies the Heating Control heading, expandable manual boost buttons, Heating Schedules launcher, direct Heating switch tile and timer remaining-time tile.
+2. `dashboard/heating-control.yaml` — scheduler pop-up (`#heatpop`).
+3. `dashboard/add-edit-schedule.yaml` — Add/Edit pop-up (`#addheat`).
+4. `dashboard/manage-schedules.yaml` — Manage pop-up (`#manageheat`).
+
+The main section and pop-ups must be in the same view. Do not replace your existing dashboard or create a second `homeassistant:` configuration block. The dashboard files are card YAML, not full dashboard configuration files.
+
+## 5. Test before live use
+
+Use only the spare test switch / safe test load:
+
+- Run each of the four manual boost scripts and confirm the switch turns on, the timer shows the matching duration, and the switch turns off at expiry.
+- Test direct manual OFF and confirm the timer is cancelled.
+- Create, enable, disable, edit, rename and delete disposable schedules.
+- Confirm schedules cannot be deleted while enabled.
+- Test switch-ON acknowledgement, timer expiry, Home Assistant restart behaviour and dashboard navigation.
+- Check the layout on a real phone as well as desktop.
+
+The automated checks do not run the scripts inside Home Assistant, load the actual custom frontend cards, or replace testing on a real phone. Do not use a live heater until the separate-instance test plan passes and independent thermostat, over-temperature and electrical protections are in place.
+
+## 6. Rollback
+
+Disable disposable schedules, remove the new dashboard cards, remove the new package file and restart Home Assistant. Do not remove a timer or Scheduler Component that other automations use.
+
+## Why this is not a HACS YAML install
+
+HACS installs custom integrations and frontend cards; it does not automatically install arbitrary package YAML or Lovelace cards. This project bundle is manually installed YAML. The separate experimental Python integration under `custom_components/` is not part of this portable package. Never run both controllers against the same physical outlet.
 
 ## Download and verify the candidate (Windows)
 
-1. Open the latest successful **Portable YAML bundle** run under GitHub Actions. Download its artifact and extract the GitHub artifact wrapper. It contains the candidate installer ZIP and its `.sha256` checksum.
-2. In PowerShell, run `Get-FileHash -Algorithm SHA256 .\HA-Heating-Scheduler-portable-YAML-candidate.zip` and compare the displayed hash to the first hexadecimal value in the matching `.sha256` file. The two values must agree.
-3. Only then extract the candidate installer ZIP. Its `portable/` folder contains the files documented above. Keep the production installation unchanged until the separate HA test gate passes.
+1. Open the latest successful **Portable YAML bundle** workflow run in GitHub Actions. Download its artifact and extract the GitHub artifact wrapper. It contains the candidate installer ZIP and its `.sha256` checksum.
+2. In PowerShell, run `Get-FileHash -Algorithm SHA256 .\HA-Heating-Scheduler-portable-YAML-candidate.zip` and compare the hash to the first hexadecimal value in the matching `.sha256` file.
+3. Extract the candidate installer ZIP only after the hashes match. Keep the production installation unchanged until the separate Home Assistant test gate passes.
