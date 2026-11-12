@@ -2,46 +2,38 @@
 
 A community Home Assistant heating scheduler project, developed on GitHub.
 
-> **Status: pre-release. The portable YAML candidate is available for isolated testing; neither track is approved for controlling a live heating system.**
+> **Status: pre-release.** The portable YAML candidate is for isolated testing only. It is not approved for controlling a live heating system.
 
 ## Two development tracks
 
 ### Portable YAML candidate
 
-The `portable/` folder contains a complete manual-install candidate:
+The `portable/` folder contains a manual-install candidate:
 
-- A Home Assistant package with helpers, scripts, automations and timer handling.
-- Three Lovelace pop-ups for Heating Control, Add/Edit and Manage Schedules.
-- Installation, rollback and release-gate documentation.
+- A Home Assistant package with helpers, six scheduler scripts, four manual boost scripts, automations and timer handling.
+- The complete main Heating Control dashboard section, including four boost tiles, the Heating Schedules launcher, direct Heating switch and remaining-time timer.
+- Three scheduler pop-ups: Heating Control, Add/Edit and Manage Schedules.
+- Dependency-first installation, rollback and release-gate documentation.
 
-Start with **[portable/INSTALL.md](portable/INSTALL.md)**. The candidate is distributed as a ZIP by the **Portable YAML bundle** GitHub Actions workflow. It is not a HACS custom integration.
+Start with **[portable/INSTALL.md](portable/INSTALL.md)**. Install the Scheduler Component and every required Lovelace custom card before importing the package or dashboard YAML. The candidate is distributed as a ZIP by the **Portable YAML bundle** GitHub Actions workflow. It is a manual YAML installation, not a HACS custom integration.
 
 ### Experimental Python integration
 
-The `custom_components/` tree is a separate, experimental integration track. It is not included in the portable YAML ZIP and should not be installed alongside the YAML controller on the same physical switch.
+The `custom_components/` tree is a separate, experimental integration track. It is not included in the portable YAML ZIP and must not be installed alongside the YAML controller on the same physical switch.
 
-## Portable YAML prerequisites
+## Portable candidate dependencies
 
-**Backend:**
-- Home Assistant with packages, scripts, automations, timers and template entities.
-- [Scheduler Component](https://github.com/nielsfaber/scheduler-component), installed separately, with its `scheduler.add`, `scheduler.edit` and `scheduler.remove` services available.
-- A test `switch.*` entity. The default package entity is `switch.heating`; map it to a spare test outlet or relay before testing.
-- A `timer.heating_display_timer` helper, created once.
+**Backend first:** Home Assistant packages/scripts/automations/timer/template support; [Scheduler Component](https://github.com/nielsfaber/scheduler-component); a test `switch.*` entity; and `timer.heating_display_timer`.
 
-**Dashboard (only if using the supplied pop-ups):**
-- [Bubble Card](https://github.com/Clooos/Bubble-Card)
-- [Mushroom Cards](https://github.com/piitaya/lovelace-mushroom) — the YAML uses `mushroom-legacy-template-card`.
-- [Auto-Entities](https://github.com/thomasloven/lovelace-auto-entities)
-- [Button Card](https://github.com/custom-cards/button-card)
-- [Super Text Input](https://github.com/skavan/super-text-input)
-- [Card Mod](https://github.com/thomasloven/lovelace-card-mod)
-- [Layout Card](https://github.com/thomasloven/lovelace-layout-card)
+**Frontend cards first:** [Expander Card](https://github.com/Alia5/lovelace-expander-card), [Bubble Card](https://github.com/Clooos/Bubble-Card), [Mushroom Cards](https://github.com/piitaya/lovelace-mushroom), [Auto-Entities](https://github.com/thomasloven/lovelace-auto-entities), [Button Card](https://github.com/custom-cards/button-card), [Super Text Input](https://github.com/skavan/super-text-input), [Card Mod](https://github.com/thomasloven/lovelace-card-mod), and [Layout Card](https://github.com/thomasloven/lovelace-layout-card).
+
+Follow the ordered checklist in [portable/INSTALL.md](portable/INSTALL.md); do not import Heating Scheduler YAML until the dependencies are installed and loaded.
 
 ## What is covered by the checks
 
-The portable workflow parses and packages the YAML, runs structural/in-memory checks and checks representative mobile grid positioning in Chromium. These checks do **not** run the scripts inside Home Assistant, load the actual custom frontend cards, or replace testing on a real phone.
+The portable workflow parses and packages the YAML, runs structural/in-memory checks and checks representative mobile grid positioning in Chromium. These checks do **not** run scripts inside Home Assistant, load the actual custom frontend cards, or replace testing on a real phone.
 
-Remaining runtime gates include validating Scheduler Component services and entity attributes, schedule filtering, Add/Edit/Delete actions, timer expiry, switch acknowledgement, restart behaviour and mobile presentation in a disposable Home Assistant instance.
+Remaining runtime gates include verifying the four boost scripts and timer behaviour, Scheduler Component services and entity attributes, schedule filtering, Add/Edit/Delete actions, switch acknowledgement, restart behaviour and mobile presentation in a disposable Home Assistant instance.
 
 ## Safety / coexistence
 
