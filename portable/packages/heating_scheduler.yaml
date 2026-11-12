@@ -56,7 +56,7 @@ input_boolean:
     name: Sunday
 script:
   # Manual boost presets. Each starts the shared display timer and ends heating.
-  heating_15_minute_boost:
+  '15_minute_boost':
     alias: 15 Minute Boost
     mode: restart
     sequence:
@@ -73,7 +73,7 @@ script:
         target:
           entity_id: switch.heating
 
-  heating_30_minute_boost:
+  '30_minute_boost':
     alias: 30 Minute Boost
     mode: restart
     sequence:
@@ -90,7 +90,7 @@ script:
         target:
           entity_id: switch.heating
 
-  heating_1_hour_boost:
+  '1_hour_boost':
     alias: 1 Hour Boost
     mode: restart
     sequence:
@@ -107,7 +107,7 @@ script:
         target:
           entity_id: switch.heating
 
-  heating_2_hour_boost:
+  '2_hour_boost':
     alias: 2 Hour Boost
     mode: restart
     sequence:
