@@ -58,7 +58,7 @@ script:
   # Manual boost presets. Each starts the shared display timer and ends heating.
   '15_minute_boost':
     alias: 15 Minute Boost
-    mode: restart
+    mode: single
     sequence:
       - action: switch.turn_on
         target:
@@ -75,7 +75,7 @@ script:
 
   '30_minute_boost':
     alias: 30 Minute Boost
-    mode: restart
+    mode: single
     sequence:
       - action: switch.turn_on
         target:
@@ -92,7 +92,7 @@ script:
 
   '1_hour_boost':
     alias: 1 Hour Boost
-    mode: restart
+    mode: single
     sequence:
       - action: switch.turn_on
         target:
@@ -109,7 +109,7 @@ script:
 
   '2_hour_boost':
     alias: 2 Hour Boost
-    mode: restart
+    mode: single
     sequence:
       - action: switch.turn_on
         target:
