@@ -1,10 +1,10 @@
-# Portable Heating Scheduler — YAML candidate
+# Portable Heating Scheduler — YAML package
 
-This folder contains the complete **YAML-first portable candidate**. It is separate from the experimental Python integration in `custom_components/`.
+This folder contains the complete **YAML-first portable package**. It is separate from the experimental Python integration in `custom_components/`.
 
 ## Status
 
-The YAML and package checks pass in CI, but the candidate has **not** yet been installed and exercised in a second running Home Assistant instance. Treat it as a test candidate, not a stable release for a live heater.
+**Published and confirmed working by the project maintainer.** This is a manual YAML package. HACS is used to install the required backend integration and frontend cards; the package and dashboard YAML are then installed manually.
 
 ## Contents
 
@@ -13,41 +13,53 @@ The YAML and package checks pass in CI, but the candidate has **not** yet been i
 - `dashboard/heating-control.yaml` — Heating Control pop-up (`#heatpop`).
 - `dashboard/add-edit-schedule.yaml` — Add/Edit pop-up (`#addheat`).
 - `dashboard/manage-schedules.yaml` — Manage Schedules pop-up (`#manageheat`).
-- `INSTALL.md` — dependency-first manual installation, test and rollback instructions.
-- `RELEASE_CANDIDATE.md` — evidence and remaining release gates.
+- `INSTALL.md` — HACS prerequisites, Marketplace install links, manual installation, verification and rollback instructions.
+- `RELEASE_CANDIDATE.md` — package validation notes and release information.
+
+## Required HACS Marketplace dependencies
+
+Install these before importing the package or dashboard YAML.
+
+### Backend integration — HACS → Integrations
+
+- **[Scheduler Component — install via HACS Marketplace](https://my.home-assistant.io/redirect/hacs_repository/?owner=nielsfaber&repository=scheduler-component&category=integration)** · [GitHub source](https://github.com/nielsfaber/scheduler-component)
+
+After installing, restart Home Assistant and add **Scheduler** from **Settings → Devices & services → Add integration**. Confirm its Scheduler actions/services are available.
+
+### Frontend cards — HACS → Dashboard
+
+| Card | HACS install link | Purpose |
+|---|---|---|
+| Expander Card | [Install](https://my.home-assistant.io/redirect/hacs_repository/?owner=Alia5&repository=lovelace-expander-card&category=plugin) · [Source](https://github.com/Alia5/lovelace-expander-card) | Expandable boost section |
+| Bubble Card | [Install](https://my.home-assistant.io/redirect/hacs_repository/?owner=Clooos&repository=Bubble-Card&category=plugin) · [Source](https://github.com/Clooos/Bubble-Card) | Schedule launcher and pop-ups |
+| Mushroom Cards | [Install](https://my.home-assistant.io/redirect/hacs_repository/?owner=piitaya&repository=lovelace-mushroom&category=plugin) · [Source](https://github.com/piitaya/lovelace-mushroom) | Template cards |
+| Auto-Entities | [Install](https://my.home-assistant.io/redirect/hacs_repository/?owner=thomasloven&repository=lovelace-auto-entities&category=plugin) · [Source](https://github.com/thomasloven/lovelace-auto-entities) | Dynamic schedule lists |
+| Button Card | [Install](https://my.home-assistant.io/redirect/hacs_repository/?owner=custom-cards&repository=button-card&category=plugin) · [Source](https://github.com/custom-cards/button-card) | Schedule rows and actions |
+| Super Text Input | [Install](https://my.home-assistant.io/redirect/hacs_repository/?owner=skavan&repository=super-text-input&category=plugin) · [Source](https://github.com/skavan/super-text-input) | Add/Edit form |
+| Card Mod | [Install](https://my.home-assistant.io/redirect/hacs_repository/?owner=thomasloven&repository=lovelace-card-mod&category=plugin) · [Source](https://github.com/thomasloven/lovelace-card-mod) | Form styling |
+| Layout Card | [Install](https://my.home-assistant.io/redirect/hacs_repository/?owner=thomasloven&repository=lovelace-layout-card&category=plugin) · [Source](https://github.com/thomasloven/lovelace-layout-card) | Responsive Manage layout |
+
+If a card is not found through its Marketplace link, add its GitHub Source URL under **HACS → Dashboard → ⋮ → Custom repositories**, choose **Dashboard** as the category, then install it. Follow HACS prompts to reload frontend resources or restart Home Assistant, and refresh your browser/app.
 
 ## Install
 
 Follow **[INSTALL.md](INSTALL.md)** from beginning to end. The required order is:
 
-1. Install the backend Scheduler Component and all listed Lovelace custom cards first.
-2. Restart / refresh Home Assistant as required and confirm the dependencies are loaded.
-3. Back up Home Assistant; use a disposable instance and spare test switch.
-4. Create `timer.heating_display_timer` once if it does not already exist.
-5. Install the package, enable packages, validate and restart.
-6. Confirm all ten `script.*` entities and the validation sensor exist.
-7. Add the main dashboard section and all three pop-ups as Manual cards in the same view.
-8. Test all four boosts, schedule actions, timer/switch safety and phone layout before considering live use.
+1. Install HACS if it is not already installed.
+2. Install Scheduler Component from HACS Integrations, restart Home Assistant, and add the Scheduler integration.
+3. Install all eight dashboard cards from HACS Dashboard/Marketplace.
+4. Reload frontend resources / restart as requested, then confirm the custom cards load.
+5. Back up Home Assistant and prepare the target switch and `timer.heating_display_timer`.
+6. Install the package, enable packages, validate configuration and restart.
+7. Confirm all ten `script.*` entities and the validation sensor exist.
+8. Add the main dashboard section and all three pop-ups as Manual cards in the same view.
+9. Verify the boost scripts, scheduler actions, timer/switch behaviour and phone layout.
 
-This is a **manual YAML installation**, not a HACS custom integration. Do not install the experimental Python integration as well, and never let both controllers operate the same physical outlet.
+The package requires a target `switch.*` entity (default `switch.heating`) and `timer.heating_display_timer`. Create the timer once if it does not already exist.
 
-## Dashboard dependencies
+## Safety and coexistence
 
-- [Expander Card](https://github.com/Alia5/lovelace-expander-card) — main dashboard expandable boost section.
-- [Bubble Card](https://github.com/Clooos/Bubble-Card) — schedule launcher and pop-ups.
-- [Mushroom Cards](https://github.com/piitaya/lovelace-mushroom) — `mushroom-legacy-template-card`.
-- [Auto-Entities](https://github.com/thomasloven/lovelace-auto-entities) — filtered schedule lists.
-- [Button Card](https://github.com/custom-cards/button-card) — schedule rows and actions.
-- [Super Text Input](https://github.com/skavan/super-text-input) — Add/Edit form.
-- [Card Mod](https://github.com/thomasloven/lovelace-card-mod) — form styling.
-- [Layout Card](https://github.com/thomasloven/lovelace-layout-card) — responsive Manage layout.
-
-Install all frontend dependencies before importing the dashboard YAML. They are frontend custom cards, not Home Assistant OS add-ons.
-
-## Safety and validation limits
-
-- Do not point the candidate at a live heater until it has passed the separate-instance test plan.
-- Do not run the legacy YAML scheduler and experimental Python integration against the same physical switch.
+- Back up Home Assistant before installation and test the target switch safely.
+- Do not run the YAML scheduler and experimental Python integration against the same physical switch.
 - Keep independent thermostat, over-temperature and electrical protections in place.
-- CI parsing and representative Chromium layout checks are not a real Home Assistant frontend test or a phone test.
-- The schedule filter depends on live Scheduler Component entity attributes and Auto-Entities behaviour that still need runtime verification.
+- HACS dependencies are separate from the manual YAML package; installing the cards does not import the package YAML.
