@@ -25,12 +25,13 @@ jobs:
           root = pathlib.Path("portable")
           names = [
               "packages/heating_scheduler.yaml",
+              "dashboard/main-heating-section.yaml",
               "dashboard/heating-control.yaml",
               "dashboard/add-edit-schedule.yaml",
               "dashboard/manage-schedules.yaml",
           ]
           docs = [yaml.safe_load((root / n).read_text()) for n in names]
-          backend, heat, editor, manage = docs
+          backend, main, heat, editor, manage = docs
           required_scripts = {
               "heating_scheduled_run", "heating_cancel_schedule",
               "heating_load_schedule_for_edit", "heating_create_schedule",
@@ -38,10 +39,16 @@ jobs:
           }
           assert required_scripts <= set(backend["script"])
           assert len(backend["automation"]) == 4
-          assert [d["hash"] for d in docs[1:]] == ["#heatpop", "#addheat", "#manageheat"]
+          assert [d["hash"] for d in docs[2:]] == ["#heatpop", "#addheat", "#manageheat"]
+          assert main["type"] == "grid"
+          assert main["cards"][1]["type"] == "custom:expander-card"
+          assert {c.get("entity") for c in main["cards"][1]["cards"] if c.get("type") == "tile"} >= {
+              "script.15_minute_boost", "script.30_minute_boost",
+              "script.1_hour_boost", "script.2_hour_boost",
+          }
           assert "timer" not in backend, "Timer is configured separately to avoid helper collision"
           assert "script.heating_create_schedule" in (root / names[2]).read_text()
-          print("PASS: four YAML files parse; required scripts, automations, and pop-up hashes present.")
+          print("PASS: five YAML files parse; boost scripts, dashboard links, automations, and pop-up hashes present.")
           print("NOTE: HA runtime, Scheduler service schema and iPhone layout are NOT verified by this job.")
           PY
       - name: Run portable structural regression tests
@@ -55,6 +62,7 @@ jobs:
           out = pathlib.Path("dist/HA-Heating-Scheduler-portable-YAML-candidate.zip")
           includes = ["INSTALL.md", "README.md", "RELEASE_CANDIDATE.md",
                       "packages/heating_scheduler.yaml",
+                      "dashboard/main-heating-section.yaml",
                       "dashboard/heating-control.yaml",
                       "dashboard/add-edit-schedule.yaml",
                       "dashboard/manage-schedules.yaml"]
@@ -86,6 +94,7 @@ jobs:
               "portable/README.md",
               "portable/RELEASE_CANDIDATE.md",
               "portable/packages/heating_scheduler.yaml",
+              "portable/dashboard/main-heating-section.yaml",
               "portable/dashboard/heating-control.yaml",
               "portable/dashboard/add-edit-schedule.yaml",
               "portable/dashboard/manage-schedules.yaml",
