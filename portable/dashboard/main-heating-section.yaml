@@ -1,0 +1,104 @@
+# Main dashboard section — add as one Manual card to an existing dashboard view.
+# Requires Expander Card and Bubble Card in addition to the pop-up dependencies.
+type: grid
+cards:
+  - type: heading
+    heading_style: title
+    icon: mdi:radiator
+    heading: Heating Control
+  - type: custom:expander-card
+    title: Heating Controls
+    cards:
+      - type: tile
+        entity: script.15_minute_boost
+        icon: mdi:heat-wave
+        state_content: state
+        vertical: false
+        tap_action:
+          action: toggle
+        icon_tap_action:
+          action: toggle
+        features_position: bottom
+      - type: tile
+        entity: script.30_minute_boost
+        icon: mdi:heat-wave
+        vertical: false
+        tap_action:
+          action: toggle
+        icon_tap_action:
+          action: toggle
+        features_position: bottom
+      - type: tile
+        entity: script.1_hour_boost
+        icon: mdi:heat-wave
+        state_content: state
+        vertical: false
+        tap_action:
+          action: toggle
+        icon_tap_action:
+          action: toggle
+        features_position: bottom
+      - type: tile
+        entity: script.2_hour_boost
+        icon: mdi:heat-wave
+        vertical: false
+        tap_action:
+          action: toggle
+        icon_tap_action:
+          action: toggle
+        features_position: bottom
+      - type: custom:bubble-card
+        card_type: button
+        button_type: name
+        sub_button:
+          main: []
+          bottom: []
+        name: Heating Schedules
+        icon: mdi:av-timer
+        scrolling_effect: false
+        show_icon: true
+        tap_action:
+          action: navigate
+          navigation_path: '#heatpop'
+        double_tap_action:
+          action: navigate
+          navigation_path: '#heatpop'
+        hold_action:
+          action: navigate
+          navigation_path: '#heatpop'
+        button_action:
+          tap_action:
+            action: navigate
+            navigation_path: '#heatpop'
+          double_tap_action:
+            action: navigate
+            navigation_path: '#heatpop'
+          hold_action:
+            action: navigate
+            navigation_path: '#heatpop'
+        card_layout: normal
+    animation: true
+    haptic: medium
+    icon-rotate-degree: '90'
+    clear: false
+  - type: tile
+    entity: switch.heating
+    name: Heating
+    icon: mdi:heat-wave
+    hide_state: false
+    vertical: false
+    tap_action:
+      action: toggle
+    icon_tap_action:
+      action: toggle
+    features_position: bottom
+  - type: tile
+    entity: timer.heating_display_timer
+    name: Heating on for
+    state_content: remaining_time
+    vertical: false
+    features_position: bottom
+column_span: 1
+background:
+  color: red
+  opacity: 8
