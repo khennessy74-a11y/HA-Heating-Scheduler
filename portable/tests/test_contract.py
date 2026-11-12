@@ -26,10 +26,12 @@ class PortableContractTests(unittest.TestCase):
         cls.heat = load("dashboard/heating-control.yaml")
         cls.form = load("dashboard/add-edit-schedule.yaml")
         cls.manage = load("dashboard/manage-schedules.yaml")
+        cls.main = load("dashboard/main-heating-section.yaml")
         cls.scripts = cls.backend["script"]
 
     def test_script_and_popup_inventory(self):
         self.assertEqual(set(self.scripts), {
+            "15_minute_boost", "30_minute_boost", "1_hour_boost", "2_hour_boost",
             "heating_scheduled_run", "heating_cancel_schedule",
             "heating_load_schedule_for_edit", "heating_create_schedule",
             "heating_update_schedule", "heating_delete_schedule",
@@ -38,6 +40,29 @@ class PortableContractTests(unittest.TestCase):
         self.assertEqual([x["hash"] for x in (self.heat, self.form, self.manage)],
                          ["#heatpop", "#addheat", "#manageheat"])
 
+    def test_manual_boost_presets_match_dashboard_entities_and_durations(self):
+        expected = {
+            "15_minute_boost": "00:15:00",
+            "30_minute_boost": "00:30:00",
+            "1_hour_boost": "01:00:00",
+            "2_hour_boost": "02:00:00",
+        }
+        tiles = {
+            card.get("entity"): card
+            for card in self.main["cards"][1]["cards"]
+            if card.get("type") == "tile"
+        }
+        for key, duration in expected.items():
+            self.assertIn(key, self.scripts)
+            self.assertIn("script." + key, tiles)
+            sequence = self.scripts[key]["sequence"]
+            self.assertEqual(sequence[1]["action"], "timer.start")
+            self.assertEqual(sequence[1]["data"]["duration"], duration)
+            self.assertEqual(sequence[2]["delay"], duration)
+            self.assertEqual(sequence[3]["action"], "switch.turn_off")
+        self.assertEqual(self.main["cards"][1]["type"], "custom:expander-card")
+        self.assertEqual(self.main["cards"][2]["entity"], "switch.heating")
+        self.assertEqual(self.main["cards"][3]["entity"], "timer.heating_display_timer")
     def test_start_session_confirms_on_before_starting_timer(self):
         steps = self.scripts["heating_scheduled_run"]["sequence"]
         self.assertIn("timer.heating_display_timer", steps[0]["value_template"])
