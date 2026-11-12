@@ -4,14 +4,15 @@
 
 ## Build evidence
 
-- The portable YAML packaging workflow parses the package and all three dashboard pop-ups and produces a downloadable ZIP.
-- 17 structural and in-memory session tests exercise script shape, state gates, duration validation, confirmation-before-timer ordering, and timer/restart OFF actions. They do not run inside Home Assistant.
+- The portable YAML packaging workflow parses the package, main dashboard section and all three scheduler pop-ups and produces a downloadable ZIP.
+- 19 structural and in-memory session tests exercise script shape, state gates, duration validation, confirmation-before-timer ordering, and timer/restart OFF actions. They do not run inside Home Assistant.
 - Chromium tests inspect YAML-derived grid positioning at mobile widths; they do not load Home Assistant, Bubble Card, or a real phone.
-- Latest verified green GitHub Actions run: https://github.com/khennessy74-a11y/HA-Heating-Scheduler/actions/runs/38964495573
+- CI must pass on the current branch head before this candidate is considered packaged. A previous green run does not validate these new boost scripts or dashboard additions.
 
 ## Contents
 
-- `packages/heating_scheduler.yaml`: the legacy-style backend (six scripts, four automations and input helpers).
+- `packages/heating_scheduler.yaml`: the backend (four manual boost scripts, six scheduler scripts, four automations and input helpers).
+- `dashboard/main-heating-section.yaml`: complete main dashboard section with four boost tiles, Heating switch, timer and schedule launcher.
 - `dashboard/heating-control.yaml`: Heating Control pop-up.
 - `dashboard/add-edit-schedule.yaml`: shared creation/edit form.
 - `dashboard/manage-schedules.yaml`: schedule management.
@@ -23,7 +24,7 @@ This ZIP is a **manual YAML installation candidate**; it is not a HACS custom in
 
 1. Install and load Scheduler Component; verify its actual service contract with the packaged scripts.
 2. Create a separate timer helper and map `switch.heating` to a spare test switch.
-3. Import all three pop-ups and verify Add, Edit, Rename, Save/Cancel, enable/disable and guarded Delete.
+3. Import the main dashboard section and all three pop-ups and verify Add, Edit, Rename, Save/Cancel, enable/disable and guarded Delete.
 4. Verify phone layout and pencil/delete taps on an actual Home Assistant frontend.
 5. Confirm start/stop, switch acknowledgement failure, timeout, Home Assistant restart and timer completion with a safe load.
 6. Verify heating-only schedule filtering on a running Home Assistant instance. Both dashboard lists require the Scheduler entity's `entities` attribute to contain `script.heating_scheduled_run`, using Auto-Entities JSON-string matching; this has not been tested against live Scheduler attributes or the installed Auto-Entities version.
