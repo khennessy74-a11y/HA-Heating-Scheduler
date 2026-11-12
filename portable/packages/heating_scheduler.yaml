@@ -55,6 +55,75 @@ input_boolean:
   heating_day_sun:
     name: Sunday
 script:
+  # Manual boost presets. Each starts the shared display timer and ends heating.
+  heating_15_minute_boost:
+    alias: 15 Minute Boost
+    mode: restart
+    sequence:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.heating
+      - action: timer.start
+        target:
+          entity_id: timer.heating_display_timer
+        data:
+          duration: "00:15:00"
+      - delay: "00:15:00"
+      - action: switch.turn_off
+        target:
+          entity_id: switch.heating
+
+  heating_30_minute_boost:
+    alias: 30 Minute Boost
+    mode: restart
+    sequence:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.heating
+      - action: timer.start
+        target:
+          entity_id: timer.heating_display_timer
+        data:
+          duration: "00:30:00"
+      - delay: "00:30:00"
+      - action: switch.turn_off
+        target:
+          entity_id: switch.heating
+
+  heating_1_hour_boost:
+    alias: 1 Hour Boost
+    mode: restart
+    sequence:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.heating
+      - action: timer.start
+        target:
+          entity_id: timer.heating_display_timer
+        data:
+          duration: "01:00:00"
+      - delay: "01:00:00"
+      - action: switch.turn_off
+        target:
+          entity_id: switch.heating
+
+  heating_2_hour_boost:
+    alias: 2 Hour Boost
+    mode: restart
+    sequence:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.heating
+      - action: timer.start
+        target:
+          entity_id: timer.heating_display_timer
+        data:
+          duration: "02:00:00"
+      - delay: "02:00:00"
+      - action: switch.turn_off
+        target:
+          entity_id: switch.heating
+
   # Scheduler fires script.turn_on with variables.minutes.
   # Do not start a second session or start the timer without switch confirmation.
   heating_scheduled_run:
