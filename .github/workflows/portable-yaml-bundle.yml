@@ -47,7 +47,7 @@ jobs:
               "script.1_hour_boost", "script.2_hour_boost",
           }
           assert "timer" not in backend, "Timer is configured separately to avoid helper collision"
-          assert "script.heating_create_schedule" in (root / names[2]).read_text()
+          assert "script.heating_create_schedule" in (root / names[3]).read_text()
           print("PASS: five YAML files parse; boost scripts, dashboard links, automations, and pop-up hashes present.")
           print("NOTE: HA runtime, Scheduler service schema and iPhone layout are NOT verified by this job.")
           PY
